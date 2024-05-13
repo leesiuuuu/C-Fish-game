@@ -10,6 +10,9 @@ SDL_Window *window = NULL;
 SDL_Renderer *renderer = NULL;
 bool isRunning = true;
 
+//스코어 변수
+int score = 0;
+
 // 노트의 위치
 int noteY1 = -100; // 시작 위치
 int noteY2 = -100; // 시작 위치
@@ -17,6 +20,7 @@ int noteY3 = -100; // 시작 위치
 int noteY4 = -100; // 시작 위치
 
 bool keyCheck[4] = { false, false, false, false };
+bool NoteCheck[4] = { false, false, false, false };
 
 
 void handleKeyPress(SDL_Event event) {
@@ -49,7 +53,7 @@ void handleKeyPress(SDL_Event event) {
     }
 }
 
-// 거리를 계산하는 함수
+// 거리 계산 함수
 double calculateDistance(SDL_Rect noteRect, SDL_Rect noteCheck) {
     // 노트의 중심 좌표 계산
     double noteCenterX = noteRect.x + noteRect.w / 2;
@@ -64,7 +68,7 @@ double calculateDistance(SDL_Rect noteRect, SDL_Rect noteCheck) {
     return distance;
 }
 
-// 거리에 따라 색상을 변경하는 함수
+// 판정 함수
 void FunctionOnDistance(SDL_Rect noteRect, SDL_Rect noteCheck, int *noteY) {
     // 노트와 노트 확인 도형 사이의 거리 계산
     double distance = calculateDistance(noteRect, noteCheck);
@@ -72,18 +76,24 @@ void FunctionOnDistance(SDL_Rect noteRect, SDL_Rect noteCheck, int *noteY) {
     // 거리에 따라 색상 변경
     if (distance < 40) {
         printf("Perfect\n");
+        score += 2000;
+        printf("내려오는데 걸린 시간 : %d ms\n", SDL_GetTicks());
+        printf("스코어 : %d\n", score);
         *noteY = -100;
     }
     else if(distance < 60) {
         printf("great\n");
+        score += 1000;
         *noteY = -100;
     }
     else if (distance < 70) {
         printf("good\n");
+        score += 500;
         *noteY = -100;
     }
     else if (distance < 0 && distance > -60) {
         printf("great\n");
+        score += 1000;
         *noteY = -100;
     }
     else if (distance > -60 && distance < -70) {
@@ -190,6 +200,7 @@ void drawNote() {
 }
 
 // 노트 이동 함수
+//노트가 노트 체크 부분에 다다르는 시간 : 1.3s
 void moveNote1() {
     noteY1 += NOTE_SPEED;
     if (noteY1 > SCREEN_HEIGHT) {
@@ -225,7 +236,6 @@ void moveNote4() {
         printf("miss!\n");
     }
 }
-
 
 int main(int argc, char* argv[]) {
     if (!initSDL()) {
