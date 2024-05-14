@@ -1,6 +1,9 @@
 #include <SDL.h>
 #include <stdbool.h>
 #include <stdio.h>
+#include <cJSON.h>
+#include <SDL_image.h>
+#include "Example.h"
 
 #define SCREEN_WIDTH 640
 #define SCREEN_HEIGHT 480
@@ -19,8 +22,12 @@ int noteY2 = -100; // 시작 위치
 int noteY3 = -100; // 시작 위치
 int noteY4 = -100; // 시작 위치
 
+int noteJudge = 0;
+
 bool keyCheck[4] = { false, false, false, false };
 bool NoteCheck[4] = { false, false, false, false };
+
+int combo = 0;
 
 
 void handleKeyPress(SDL_Event event) {
@@ -76,32 +83,46 @@ void FunctionOnDistance(SDL_Rect noteRect, SDL_Rect noteCheck, int *noteY) {
     // 거리에 따라 색상 변경
     if (distance < 40) {
         printf("Perfect\n");
-        score += 2000;
+        score += 200;
         printf("내려오는데 걸린 시간 : %d ms\n", SDL_GetTicks());
         printf("스코어 : %d\n", score);
+        ++combo;
         *noteY = -100;
+        noteJudge = 4;
     }
     else if(distance < 60) {
         printf("great\n");
-        score += 1000;
+        score += 100;
         *noteY = -100;
+        noteJudge = 3;
+        ++combo;
     }
     else if (distance < 70) {
         printf("good\n");
-        score += 500;
+        score += 50;
         *noteY = -100;
+        noteJudge = 2;
+        combo = 0;
     }
     else if (distance < 0 && distance > -60) {
         printf("great\n");
-        score += 1000;
+        score += 100;
         *noteY = -100;
+        noteJudge = 3;
+        ++combo;
     }
     else if (distance > -60 && distance < -70) {
         printf("good\n");
+        score += 50;
         *noteY = -100;
+        noteJudge = 2;
+        combo = 0;
     }
     else {
         printf("miss!\n");
+        score -= 100;
+        noteJudge = 1;
+        combo = 0;
     }
 }
 
@@ -136,6 +157,17 @@ void closeSDL() {
 
 // 노트를 그리는 함수
 void drawNote() {
+    //이미지 로드 포인터 변수
+    SDL_Texture* perfectJudge = IMG_LoadTexture(renderer, "Image/perfect.png");
+    SDL_Texture* greatJudge = IMG_LoadTexture(renderer, "Image/great.png");
+    SDL_Texture* goodJudge = IMG_LoadTexture(renderer, "Image/good.png");
+    SDL_Texture* missJudge = IMG_LoadTexture(renderer, "Image/miss.png");
+    SDL_SetTextureAlphaMod(perfectJudge, 50);
+    SDL_SetTextureAlphaMod(greatJudge, 50);
+    SDL_SetTextureAlphaMod(goodJudge, 50);
+    SDL_SetTextureAlphaMod(missJudge, 50);
+  
+
     SDL_SetRenderDrawColor(renderer, 0, 0, 0, 255); // 검은색 배경
     SDL_RenderClear(renderer);
 
@@ -168,7 +200,37 @@ void drawNote() {
  
     SDL_Rect noteCheck4 = { 190, 400, 60, 20 };
     SDL_RenderFillRect(renderer, &noteCheck4);
+
+    //판정 이미지 출력
+    switch (noteJudge)
+    {
+    case 1:
+        SDL_DestroyTexture(goodJudge);
+        SDL_DestroyTexture(perfectJudge);
+        SDL_DestroyTexture(greatJudge);
+        stretchTexture(renderer, 50, 100, 150, 100, missJudge);
+        break;
+    case 2:
+        SDL_DestroyTexture(missJudge);
+        SDL_DestroyTexture(perfectJudge);
+        SDL_DestroyTexture(greatJudge);
+        stretchTexture(renderer, 50, 100, 150, 100, goodJudge);
+        break;
+    case 3:
+        SDL_DestroyTexture(missJudge);
+        SDL_DestroyTexture(perfectJudge);
+        SDL_DestroyTexture(goodJudge);
+        stretchTexture(renderer, 50, 100, 150, 100, greatJudge);
+        break;
+    case 4:
+        SDL_DestroyTexture(missJudge);
+        SDL_DestroyTexture(goodJudge);
+        SDL_DestroyTexture(greatJudge);
+        stretchTexture(renderer, 50, 100, 150, 100, perfectJudge);
+        break;
+    }
     
+    //키 눌렸을 시 판정 확인
     if (keyCheck[0] == true) {
         FunctionOnDistance(noteRect1, noteCheck1, &noteY1);
         keyCheck[0] = false;
@@ -207,6 +269,7 @@ void moveNote1() {
         // 화면 밑으로 나가면 초기 위치로 리셋
         noteY1 = -100;
         printf("miss!\n");
+        noteJudge = 1;
     }
 }
 void moveNote2() {
@@ -216,6 +279,7 @@ void moveNote2() {
         // 화면 밑으로 나가면 초기 위치로 리셋
         noteY2 = -100;
         printf("miss!\n");
+        noteJudge = 1;
     }
 
 }
@@ -225,6 +289,7 @@ void moveNote3() {
         // 화면 밑으로 나가면 초기 위치로 리셋
         noteY3 = -100;
         printf("miss!\n");
+        noteJudge = 1;
     }
 
 }
@@ -234,6 +299,7 @@ void moveNote4() {
         // 화면 밑으로 나가면 초기 위치로 리셋
         noteY4 = -100;
         printf("miss!\n");
+        noteJudge = 1;
     }
 }
 
