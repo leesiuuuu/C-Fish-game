@@ -4,15 +4,17 @@
 #include <cJSON.h>
 #include <SDL_image.h>
 #include "Example.h"
+#include <SDL_audio.h>
 
 #define SCREEN_WIDTH 640
 #define SCREEN_HEIGHT 480
-#define NOTE_SPEED 5
+#define NOTE_SPEED 11.8
 
 SDL_Window *window = NULL;
 SDL_Renderer *renderer = NULL;
+Mix_Music *music = NULL;
 bool isRunning = true;
-
+    
 //스코어 변수
 int score = 0;
 
@@ -145,6 +147,12 @@ bool initSDL() {
         return false;
     }
 
+    SDL_Init(SDL_INIT_AUDIO);
+    if (Mix_OpenAudio(44100, MIX_DEFAULT_FORMAT, 2, 2048) < 0) {
+        printf("SDL_Mixer 초기화에 실패했습니다! SDL_Mixer Error : %s\n", Mix_GetError());
+        return false;
+    }
+
     return true;
 }
 
@@ -261,6 +269,16 @@ void drawNote() {
     SDL_RenderPresent(renderer);
 }
 
+bool LoadMedia() {
+    music = Mix_LoadMUS("Songs/Insert Coin.wav");
+
+    if (!music) {
+        printf("음악 파일을 불러올 수 없습니다! SDL_Mixer Error: %s\n", Mix_GetError());
+        return false;
+    }
+    return true;
+}
+
 // 노트 이동 함수
 //노트가 노트 체크 부분에 다다르는 시간 : 1.3s
 void moveNote1() {
@@ -308,7 +326,13 @@ int main(int argc, char* argv[]) {
         return -1;
     }
 
+    if (!LoadMedia()) {
+        close();
+        return -1;
+    }
+    Mix_PlayMusic(music, -1);
     while (isRunning) {
+        
         SDL_Event event;
         while (SDL_PollEvent(&event)) {
             if (event.type == SDL_QUIT) {
@@ -316,6 +340,7 @@ int main(int argc, char* argv[]) {
             }
             handleKeyPress(event);
         }
+        LoadMedia();
         moveNote1();
         moveNote2();
         moveNote3();
