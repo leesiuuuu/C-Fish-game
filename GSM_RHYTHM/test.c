@@ -5,10 +5,11 @@
 #include <SDL_image.h>
 #include "Example.h"
 #include <SDL_audio.h>
+#include "osuToC.h"
 
 #define SCREEN_WIDTH 640
 #define SCREEN_HEIGHT 480
-#define NOTE_SPEED 11.8
+#define NOTE_SPEED 7.518
 
 SDL_Window *window = NULL;
 SDL_Renderer *renderer = NULL;
@@ -181,6 +182,7 @@ void drawNote() {
 
     // 노트를 빨간색으로 그림
     SDL_SetRenderDrawColor(renderer, 255, 0, 0, 255);
+    MapToNote(renderer);
     //노트 위치, 크기 코드
     SDL_Rect noteRect1 = {10, noteY1, 60, 20}; 
     SDL_RenderFillRect(renderer, &noteRect1);
@@ -194,7 +196,9 @@ void drawNote() {
     SDL_Rect noteRect4 = { 190, noteY4, 60, 20 };
     SDL_RenderFillRect(renderer, &noteRect4);
 
+    //확인 도형을 하얀색으로 그림
     SDL_SetRenderDrawColor(renderer, 255, 255, 255, 255);
+    
 
     //노트 확인 도형
     SDL_Rect noteCheck1 = { 10, 400, 60, 20 };
@@ -325,7 +329,6 @@ int main(int argc, char* argv[]) {
     if (!initSDL()) {
         return -1;
     }
-
     if (!LoadMedia()) {
         close();
         return -1;
@@ -348,7 +351,6 @@ int main(int argc, char* argv[]) {
         drawNote();
         SDL_Delay(10); // 프레임 속도 제한
     }
-
     closeSDL();
     return 0;
 }
