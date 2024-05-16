@@ -9,7 +9,7 @@
 
 #define SCREEN_WIDTH 640
 #define SCREEN_HEIGHT 480
-#define NOTE_SPEED 7.518
+#define NOTE_SPEED 5
 
 SDL_Window *window = NULL;
 SDL_Renderer *renderer = NULL;
@@ -21,9 +21,14 @@ int score = 0;
 
 // 노트의 위치
 int noteY1 = -100; // 시작 위치
-int noteY2 = -100; // 시작 위치
-int noteY3 = -100; // 시작 위치
-int noteY4 = -100; // 시작 위치
+int noteY2 = -200; // 시작 위치
+int noteY3 = -300; // 시작 위치
+int noteY4 = -400; // 시작 위치
+
+int noteY01 = -800; // 시작 위치
+int noteY02 = -900; // 시작 위치
+int noteY03 = -1000; // 시작 위치
+int noteY04 = -1100; // 시작 위치
 
 int noteJudge = 0;
 
@@ -154,6 +159,7 @@ bool initSDL() {
         return false;
     }
 
+
     return true;
 }
 
@@ -163,6 +169,7 @@ void closeSDL() {
     SDL_DestroyWindow(window);
     SDL_Quit();
 }
+
 
 // 노트를 그리는 함수
 void drawNote() {
@@ -182,7 +189,6 @@ void drawNote() {
 
     // 노트를 빨간색으로 그림
     SDL_SetRenderDrawColor(renderer, 255, 0, 0, 255);
-    MapToNote(renderer);
     //노트 위치, 크기 코드
     SDL_Rect noteRect1 = {10, noteY1, 60, 20}; 
     SDL_RenderFillRect(renderer, &noteRect1);
@@ -195,6 +201,18 @@ void drawNote() {
 
     SDL_Rect noteRect4 = { 190, noteY4, 60, 20 };
     SDL_RenderFillRect(renderer, &noteRect4);
+
+    SDL_Rect noteRect01 = { 10, noteY01, 60, 20 };
+    SDL_RenderFillRect(renderer, &noteRect01);
+
+    SDL_Rect noteRect02 = { 70, noteY02, 60, 20 };
+    SDL_RenderFillRect(renderer, &noteRect02);
+
+    SDL_Rect noteRect03 = { 130, noteY03, 60, 20 };
+    SDL_RenderFillRect(renderer, &noteRect03);
+
+    SDL_Rect noteRect04 = { 190, noteY04, 60, 20 };
+    SDL_RenderFillRect(renderer, &noteRect04);
 
     //확인 도형을 하얀색으로 그림
     SDL_SetRenderDrawColor(renderer, 255, 255, 255, 255);
@@ -244,19 +262,40 @@ void drawNote() {
     
     //키 눌렸을 시 판정 확인
     if (keyCheck[0] == true) {
-        FunctionOnDistance(noteRect1, noteCheck1, &noteY1);
+        if (calculateDistance(noteRect1, noteCheck1) > calculateDistance(noteRect01, noteCheck1)) {
+            FunctionOnDistance(noteRect01, noteCheck1, &noteY01);
+        }
+        else {
+            FunctionOnDistance(noteRect1, noteCheck1, &noteY1);
+        }
+ 
         keyCheck[0] = false;
     }
     if (keyCheck[1] == true) {
-        FunctionOnDistance(noteRect2, noteCheck2, &noteY2);
+        if (calculateDistance(noteRect2, noteCheck2) > calculateDistance(noteRect02, noteCheck2)) {
+            FunctionOnDistance(noteRect02, noteCheck2, &noteY02);
+        }
+        else {
+            FunctionOnDistance(noteRect2, noteCheck2, &noteY2);
+        }
         keyCheck[1] = false;
     }
     if (keyCheck[2] == true) {
-        FunctionOnDistance(noteRect3, noteCheck3, &noteY3);
+        if (calculateDistance(noteRect3, noteCheck3) > calculateDistance(noteRect03, noteCheck3)) {
+            FunctionOnDistance(noteRect02, noteCheck2, &noteY03);
+        }
+        else {
+            FunctionOnDistance(noteRect3, noteCheck3, &noteY3);
+        }
         keyCheck[2] = false;
     }
     if (keyCheck[3] == true) {
-        FunctionOnDistance(noteRect4, noteCheck4, &noteY4);
+        if (calculateDistance(noteRect4, noteCheck4) > calculateDistance(noteRect04, noteCheck4)) {
+            FunctionOnDistance(noteRect04, noteCheck4, &noteY04);
+        }
+        else {
+            FunctionOnDistance(noteRect4, noteCheck4, &noteY4);
+        }
         keyCheck[3] = false;
     }
 
@@ -325,6 +364,43 @@ void moveNote4() {
     }
 }
 
+void moveNote01() {
+    noteY01 += NOTE_SPEED;
+    if (noteY01 > SCREEN_HEIGHT) {
+        // 화면 밑으로 나가면 초기 위치로 리셋
+        noteY01 = -100;
+        printf("miss!\n");
+        noteJudge = 1;
+    }
+}
+void moveNote02() {
+    noteY02 += NOTE_SPEED;
+    if (noteY02 > SCREEN_HEIGHT) {
+        // 화면 밑으로 나가면 초기 위치로 리셋
+        noteY02 = -100;
+        printf("miss!\n");
+        noteJudge = 1;
+    }
+}
+void moveNote03() {
+    noteY03 += NOTE_SPEED;
+    if (noteY03 > SCREEN_HEIGHT) {
+        // 화면 밑으로 나가면 초기 위치로 리셋
+        noteY03 = -100;
+        printf("miss!\n");
+        noteJudge = 1;
+    }
+}
+void moveNote04() {
+    noteY04 += NOTE_SPEED;
+    if (noteY04 > SCREEN_HEIGHT) {
+        // 화면 밑으로 나가면 초기 위치로 리셋
+        noteY04 = -100;
+        printf("miss!\n");
+        noteJudge = 1;
+    }
+}
+
 int main(int argc, char* argv[]) {
     if (!initSDL()) {
         return -1;
@@ -333,7 +409,8 @@ int main(int argc, char* argv[]) {
         close();
         return -1;
     }
-    Mix_PlayMusic(music, -1);
+    Mix_PlayMusic(music, -1);        
+
     while (isRunning) {
         
         SDL_Event event;
@@ -348,6 +425,10 @@ int main(int argc, char* argv[]) {
         moveNote2();
         moveNote3();
         moveNote4();
+        moveNote01();
+        moveNote02();
+        moveNote03();
+        moveNote04();
         drawNote();
         SDL_Delay(10); // 프레임 속도 제한
     }
