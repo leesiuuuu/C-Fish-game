@@ -8,15 +8,7 @@
 
 
 void MapToNote(SDL_Renderer* Rend) {
-	SDL_Rect noteReck[3]; //171
-	noteReck[0] = (SDL_Rect){10, 665, 60, 20 };
-	SDL_RenderFillRect(Rend, &noteReck[0]);
 	
-	noteReck[1] = (SDL_Rect){ 190, 665, 60, 20 };
-	SDL_RenderFillRect(Rend, &noteReck[1]);
-
-	noteReck[2] = (SDL_Rect){ 70, 1002, 60, 20 };
-	SDL_RenderFillRect(Rend, &noteReck[2]);
 }
 
 /*

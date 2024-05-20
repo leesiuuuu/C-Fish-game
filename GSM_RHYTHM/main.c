@@ -225,7 +225,7 @@ int main(int argc, char* argv[]) {
         SDL_RenderCopy(Renderer, Texture, NULL, NULL);
         stretchTexture(Renderer, 200, 100, 230, 150, UITexture);
         stretchTexture(Renderer, 200, 200, 230, 150, UITexture2);
-        stretchTexture(Renderer, 200, 300, 230, 150, UITexture3);
+        stretchTexture(Renderer, 200, 300, 230, 150, UITexture3);   
         SDL_RenderPresent(Renderer);
     }
 

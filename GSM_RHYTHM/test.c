@@ -20,15 +20,10 @@ bool isRunning = true;
 int score = 0;
 
 // 노트의 위치
-int noteY1 = -100; // 시작 위치
-int noteY2 = -200; // 시작 위치
-int noteY3 = -300; // 시작 위치
-int noteY4 = -400; // 시작 위치
-
-int noteY01 = -800; // 시작 위치
-int noteY02 = -900; // 시작 위치
-int noteY03 = -1000; // 시작 위치
-int noteY04 = -1100; // 시작 위치
+int noteY1 = 0; // 시작 위치
+int noteY2 = 0; // 시작 위치
+int noteY3 = 0; // 시작 위치
+int noteY4 = 0; // 시작 위치
 
 int noteJudge = 0;
 
@@ -189,9 +184,11 @@ void drawNote() {
 
     // 노트를 빨간색으로 그림
     SDL_SetRenderDrawColor(renderer, 255, 0, 0, 255);
-    //노트 위치, 크기 코드
+    //노트 위치, 크기 코드    
     SDL_Rect noteRect1 = {10, noteY1, 60, 20}; 
     SDL_RenderFillRect(renderer, &noteRect1);
+    /*
+
     
     SDL_Rect noteRect2 = { 70, noteY2, 60, 20 };
     SDL_RenderFillRect(renderer, &noteRect2);
@@ -213,6 +210,8 @@ void drawNote() {
 
     SDL_Rect noteRect04 = { 190, noteY04, 60, 20 };
     SDL_RenderFillRect(renderer, &noteRect04);
+    */
+
 
     //확인 도형을 하얀색으로 그림
     SDL_SetRenderDrawColor(renderer, 255, 255, 255, 255);
@@ -259,18 +258,13 @@ void drawNote() {
         stretchTexture(renderer, 50, 100, 150, 100, perfectJudge);
         break;
     }
-    
-    //키 눌렸을 시 판정 확인
     if (keyCheck[0] == true) {
-        if (calculateDistance(noteRect1, noteCheck1) > calculateDistance(noteRect01, noteCheck1)) {
-            FunctionOnDistance(noteRect01, noteCheck1, &noteY01);
-        }
-        else {
-            FunctionOnDistance(noteRect1, noteCheck1, &noteY1);
-        }
- 
+        FunctionOnDistance(noteRect1, noteCheck1, &noteY1);
         keyCheck[0] = false;
     }
+    //키 눌렸을 시 판정 확인
+    /*
+
     if (keyCheck[1] == true) {
         if (calculateDistance(noteRect2, noteCheck2) > calculateDistance(noteRect02, noteCheck2)) {
             FunctionOnDistance(noteRect02, noteCheck2, &noteY02);
@@ -298,7 +292,7 @@ void drawNote() {
         }
         keyCheck[3] = false;
     }
-
+    */
 
 
     //겉 라인 생성 코드
@@ -364,6 +358,7 @@ void moveNote4() {
     }
 }
 
+/*
 void moveNote01() {
     noteY01 += NOTE_SPEED;
     if (noteY01 > SCREEN_HEIGHT) {
@@ -400,13 +395,14 @@ void moveNote04() {
         noteJudge = 1;
     }
 }
+*/
 
 int main(int argc, char* argv[]) {
     if (!initSDL()) {
         return -1;
     }
     if (!LoadMedia()) {
-        close();
+        closeSDL();
         return -1;
     }
     Mix_PlayMusic(music, -1);        
@@ -422,13 +418,6 @@ int main(int argc, char* argv[]) {
         }
         LoadMedia();
         moveNote1();
-        moveNote2();
-        moveNote3();
-        moveNote4();
-        moveNote01();
-        moveNote02();
-        moveNote03();
-        moveNote04();
         drawNote();
         SDL_Delay(10); // 프레임 속도 제한
     }
