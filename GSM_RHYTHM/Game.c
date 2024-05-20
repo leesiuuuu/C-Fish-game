@@ -18,6 +18,8 @@ SDL_Texture* start = NULL;
 SDL_Texture* quit1 = NULL;
 SDL_Texture* fishselete = NULL;
 SDL_Texture* gameback = NULL;
+SDL_Texture* ready = NULL;
+SDL_Texture* go = NULL;
 
 bool init() {
     if (SDL_Init(SDL_INIT_VIDEO) < 0) {
@@ -74,46 +76,63 @@ bool loadMedia() {
     start = IMG_LoadTexture(Renderer, "Image/Game/start.png");
     quit1 = IMG_LoadTexture(Renderer, "Image/game/quit.png");
     fishselete = IMG_LoadTexture(Renderer, "Image/game/fishopen.png");
+    gameback = IMG_LoadTexture(Renderer, "Image/Game/gameback.png");
+    ready = IMG_LoadTexture(Renderer, "Image/Game/Ready.png");
+    go = IMG_LoadTexture(Renderer, "Image/Game/Go.png");
 
-    Texture_Check(fish);
-    Texture_Check(fishselete);
-    Texture_Check(startimg);    
-    Texture_Check(fishgame);
-    Texture_Check(background);
-    Texture_Check(start);
-    Texture_Check(quit1);
+    if (fish == NULL || startimg == NULL || fishgame == NULL || background == NULL ||
+        start == NULL || quit1 == NULL || fishselete == NULL || gameback == NULL ||
+        ready == NULL || go == NULL) {
+        printf("이미지를 로드하는 데 실패했습니다!\n");
+        return false;
+    }
+
     return true;
 }
-
-bool gameMedia() {
-    fish = IMG_LoadTexture(Renderer, "Image/Game/fish2.png");
-    gameback = IMG_LoadTexture(Renderer, "Image/Game/gameback.png");
-
-    Texture_Check(fish);
-    Texture_Check(gameback);
-}
-
 
 void close() {
     //SDL_DestroyTexture(Texture);
     SDL_DestroyRenderer(Renderer);
     SDL_DestroyWindow(window);
     //Mix_FreeMusic(music);
+    SDL_DestroyRenderer(Renderer);
+    SDL_DestroyWindow(window);
     Mix_CloseAudio();
-    window = NULL;
-    Renderer = NULL;
-    font = NULL;
-    countFont = NULL;
-     fish = NULL;
-    startimg = NULL;
-    background = NULL;
-    fishgame = NULL;
-    start = NULL;
-    quit1 = NULL;
-    fishselete = NULL;
+    SDL_DestroyTexture(fish);
+    SDL_DestroyTexture(startimg);
+    SDL_DestroyTexture(background);
+    SDL_DestroyTexture(fishgame);
+    SDL_DestroyTexture(start);
+    SDL_DestroyTexture(quit1);
+    SDL_DestroyTexture(fishselete);
+    SDL_DestroyTexture(gameback);
+    SDL_DestroyTexture(ready);
+    SDL_DestroyTexture(go);
     TTF_Quit();
     IMG_Quit();
     SDL_Quit();
+}
+
+int y = 100;
+
+bool gameover = false;
+
+bool Jump = false;
+
+void GravitySetting() {
+    y += 3;
+    if (y > 480) {
+        y = 100;
+        gameover = true;
+    }
+    if (Jump == true) {
+        for (int i = 0; i < 10; i++)
+        {
+            y -= 8;
+            Jump = false;
+        }
+        
+    }
 }
 
 int main(int argc, char* argv[]) {
@@ -125,59 +144,44 @@ int main(int argc, char* argv[]) {
         printf("이미지를 불러오는데 실패했습니다!\n");
         return false;
     }
-    /*
-    SDL_Color black = { 0, 0, 0, 0 };
-    SDL_Surface* surface = TTF_RenderText_Blended(font, "Fish Game", black);
-    SDL_Surface* countsurface = TTF_RenderText_Blended(font, "SCORE : ", black);
-    SDL_Texture* texture = SDL_CreateTextureFromSurface(Renderer, surface);
-    SDL_Texture* texture2 = SDL_CreateTextureFromSurface(Renderer, countsurface);
-    Texture_Check(texture);
-    Texture_Check(texture2);
-    SDL_FreeSurface(surface);
-    SDL_FreeSurface(countsurface);
-    SDL_Rect r = { 185, 180, surface->w, surface->h };
-    SDL_Rect r2 = { 0, 0, countsurface->w, countsurface->h };
-    //SDL_RenderCopy(Renderer, texture2, NULL, &r2);
-    SDL_DestroyTexture(texture);
-    SDL_DestroyTexture(texture2);
-    TTF_CloseFont(font);
-    */
 
     bool isDestroyed = false;
     bool gameStart = false;
     bool selete = false;
     bool start1 = false;
+    bool Ready = true;
 
     SDL_Event event;
     int quit = 0;
+
     while (!quit) {
         while (SDL_PollEvent(&event) != 0) {
             if (event.type == SDL_QUIT) {
                 quit = true;
             }
             if (event.type == SDL_KEYDOWN) {
-                switch (event.key.keysym.sym)
-                {
+                switch (event.key.keysym.sym) {
                 case SDLK_DOWN:
                     selete = true;
                     break;
                 case SDLK_UP:
                     selete = false;
                     break;
-
                 case SDLK_SPACE:
                     start1 = true;
                     break;
+                case SDLK_z:
+                    Jump = true;
+                    break;
                 }
             }
-
         }
+
         if (isDestroyed == false) {
             SDL_RenderCopy(Renderer, startimg, NULL, NULL);
             SDL_RenderPresent(Renderer);
             SDL_Delay(2000);
-            for (int i = 255; i >= 0; i -= 2)
-            {
+            for (int i = 255; i >= 0; i -= 2) {
                 SDL_RenderClear(Renderer);
                 SDL_SetTextureAlphaMod(startimg, i);
                 SDL_RenderCopy(Renderer, startimg, NULL, NULL);
@@ -185,21 +189,25 @@ int main(int argc, char* argv[]) {
             }
             isDestroyed = true;
         }
+
         SDL_RenderClear(Renderer);
+
         if (isDestroyed == true && gameStart == false) {
-            loadMedia();
             SDL_RenderCopy(Renderer, background, NULL, NULL);
             SDL_RenderCopy(Renderer, fishgame, NULL, NULL);
             SDL_RenderCopy(Renderer, start, NULL, NULL);
             SDL_RenderCopy(Renderer, quit1, NULL, NULL);
+
             if (selete == false) {
                 stretchTexture(Renderer, 170, 215, 80, 80, fish);
                 if (start1 == true && selete == false) {
                     printf("게임 시작!\n");
                     stretchTexture(Renderer, 170, 215, 80, 80, fishselete);
-                    SDL_Delay(1000);
                     start1 = false;
+                    SDL_Delay(300);
+                    SDL_RenderClear(Renderer);
                     gameStart = true;
+                    selete = true;
                 }
             }
             else {
@@ -209,15 +217,34 @@ int main(int argc, char* argv[]) {
                     close();
                 }
             }
+
             SDL_RenderPresent(Renderer);
         }
+
         if (gameStart == true) {
-            
-            selete = false;
-            
-            
+            SDL_RenderCopy(Renderer, gameback, NULL, NULL);
+
+            if (Ready == true) {
+                stretchTexture(Renderer, 150, y, 100, 100, fish);
+                SDL_RenderCopy(Renderer, ready, NULL, NULL);
+                SDL_RenderPresent(Renderer);
+                SDL_Delay(1000);
+                SDL_DestroyTexture(ready);
+                SDL_RenderCopy(Renderer, go, NULL, NULL);
+                SDL_RenderPresent(Renderer);
+                SDL_Delay(1000);
+                SDL_DestroyTexture(go);
+                SDL_RenderPresent(Renderer);
+                Ready = false;
+            }
+            else {
+                GravitySetting();
+                stretchTexture(Renderer, 150, y, 100, 100, fish);
+                SDL_RenderPresent(Renderer);
+            }
         }
     }
+
     close();
     return 0;
 }
