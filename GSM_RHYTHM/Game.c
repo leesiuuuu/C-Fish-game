@@ -20,6 +20,8 @@ SDL_Texture* fishselete = NULL;
 SDL_Texture* gameback = NULL;
 SDL_Texture* ready = NULL;
 SDL_Texture* go = NULL;
+Mix_Music* music = NULL;
+Mix_Chunk* StartSound = NULL;
 
 bool init() {
     if (SDL_Init(SDL_INIT_VIDEO) < 0) {
@@ -79,6 +81,7 @@ bool loadMedia() {
     gameback = IMG_LoadTexture(Renderer, "Image/Game/gameback.png");
     ready = IMG_LoadTexture(Renderer, "Image/Game/Ready.png");
     go = IMG_LoadTexture(Renderer, "Image/Game/Go.png");
+    music = Mix_LoadMUS("Songs/mainSong1.wav");
 
     if (fish == NULL || startimg == NULL || fishgame == NULL || background == NULL ||
         start == NULL || quit1 == NULL || fishselete == NULL || gameback == NULL ||
@@ -86,7 +89,20 @@ bool loadMedia() {
         printf("이미지를 로드하는 데 실패했습니다!\n");
         return false;
     }
+    if (music == NULL) {
+        printf("음악을 로드하는 데 실패했습니다!\n");
+        return false;
+    }
 
+    return true;
+}
+
+bool AudioSound() {
+    StartSound = Mix_LoadWAV("Sound/start.wav");
+    if (!StartSound) {
+        printf("효과음을 불러오지 못했습니다!\n");
+        return false;
+    }
     return true;
 }
 
@@ -119,16 +135,18 @@ bool gameover = false;
 
 bool Jump = false;
 
-void GravitySetting() {
-    y += 3;
-    if (y > 480) {
+void GravitySetting() { //물고기의 움직임 조절 함수
+    y += 2; // 물고기를 떨어뜨리는 코드
+    if (y > 480) { //바닥으로 떨어졌을 때 게임오버 화면 뜨게 하는 코드
         y = 100;
         gameover = true;
     }
     if (Jump == true) {
+        if (y < 0) //물고기가 화면을 넘어가는 걸 방지하는 코드
+            y = 0;
         for (int i = 0; i < 10; i++)
         {
-            y -= 8;
+            y -= 6;
             Jump = false;
         }
         
@@ -144,18 +162,20 @@ int main(int argc, char* argv[]) {
         printf("이미지를 불러오는데 실패했습니다!\n");
         return false;
     }
-
+    bool startAudio = false;
+    bool MusicStart = false;
     bool isDestroyed = false;
     bool gameStart = false;
     bool selete = false;
     bool start1 = false;
     bool Ready = true;
+    bool readyDelete = false;
 
     SDL_Event event;
     int quit = 0;
 
     while (!quit) {
-        while (SDL_PollEvent(&event) != 0) {
+        while (SDL_PollEvent(&event) != 0) { //키 이벤트를 받는 코드
             if (event.type == SDL_QUIT) {
                 quit = true;
             }
@@ -193,6 +213,10 @@ int main(int argc, char* argv[]) {
         SDL_RenderClear(Renderer);
 
         if (isDestroyed == true && gameStart == false) {
+            if (MusicStart == false) {
+                Mix_PlayMusic(music, -1);
+                MusicStart = true;
+            }
             SDL_RenderCopy(Renderer, background, NULL, NULL);
             SDL_RenderCopy(Renderer, fishgame, NULL, NULL);
             SDL_RenderCopy(Renderer, start, NULL, NULL);
@@ -204,7 +228,6 @@ int main(int argc, char* argv[]) {
                     printf("게임 시작!\n");
                     stretchTexture(Renderer, 170, 215, 80, 80, fishselete);
                     start1 = false;
-                    SDL_Delay(300);
                     SDL_RenderClear(Renderer);
                     gameStart = true;
                     selete = true;
@@ -215,6 +238,7 @@ int main(int argc, char* argv[]) {
                 if (start1 == true && selete == true) {
                     printf("게임 종료!");
                     close();
+                    return 0;
                 }
             }
 
@@ -222,14 +246,26 @@ int main(int argc, char* argv[]) {
         }
 
         if (gameStart == true) {
+            AudioSound();
+            if (startAudio == false) {
+                Mix_FreeMusic(music);
+                Mix_PlayChannel(-1, StartSound, 0);
+                startAudio = true;
+            }
             SDL_RenderCopy(Renderer, gameback, NULL, NULL);
 
             if (Ready == true) {
                 stretchTexture(Renderer, 150, y, 100, 100, fish);
-                SDL_RenderCopy(Renderer, ready, NULL, NULL);
+                for (int i = 255; i >= 0; i-=5)
+                {
+                    SDL_RenderClear(Renderer);
+                    SDL_RenderCopy(Renderer, gameback, NULL, NULL);
+                    stretchTexture(Renderer, 150, y, 100, 100, fish);
+                    SDL_SetTextureAlphaMod(ready, i);
+                    SDL_RenderCopy(Renderer, ready, NULL, NULL);
+                    SDL_RenderPresent(Renderer);
+                } //Ready 글자 점점 사리지게 하는 for 문
                 SDL_RenderPresent(Renderer);
-                SDL_Delay(1000);
-                SDL_DestroyTexture(ready);
                 SDL_RenderCopy(Renderer, go, NULL, NULL);
                 SDL_RenderPresent(Renderer);
                 SDL_Delay(1000);
