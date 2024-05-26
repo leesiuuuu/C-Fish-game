@@ -158,6 +158,7 @@ void close() {
     SDL_Quit();
 }
 
+//물고기 시작 위치값
 int y = 100;
 int x = 550;
 //장애물 y값 범위
@@ -183,8 +184,8 @@ void GravitySetting() { //물고기의 움직임 조절 함수
         for (int i = 0; i < 10; i++)
         {
             y -= 6;
-            Jump = false;
         }
+        Jump = false;
         
     }
     // 장애물 움직임 코드
@@ -250,7 +251,7 @@ int main(int argc, char* argv[]) {
                 }
             }
         }
-
+        // 첫화면 로직
         if (isDestroyed == false) {
             SDL_RenderCopy(Renderer, startimg, NULL, NULL);
             SDL_RenderPresent(Renderer);
@@ -263,9 +264,9 @@ int main(int argc, char* argv[]) {
             }
             isDestroyed = true;
         }
-
-        SDL_RenderClear(Renderer);
+        // 메인 화면 로직
         if (isDestroyed == true && gameStart == false && DeathMenu == false) {
+            SDL_RenderClear(Renderer);
             if (MusicStart == false) {
                 Mix_PlayMusic(music, -1);
                 MusicStart = true;
@@ -297,6 +298,7 @@ int main(int argc, char* argv[]) {
 
             SDL_RenderPresent(Renderer);
         }
+        // 게임 작동 로직
         if (gameStart == true) {
             AudioSound();
             if (startAudio == false) {
@@ -349,20 +351,21 @@ int main(int argc, char* argv[]) {
             }
             gameStart = false;
             DeathMenu = true;
+            // 오류 해결! 오디오 초기화 오류였다고 한다...
+            Mix_HaltMusic(-1); 
+            Mix_HaltChannel(-1);
             SDL_RenderClear(Renderer);
-
             SDL_RenderCopy(Renderer, background, NULL, NULL);
             SDL_RenderCopy(Renderer, fishselete, NULL, NULL);
             SDL_RenderCopy(Renderer, Death, NULL, NULL);
             SDL_RenderPresent(Renderer);
             SDL_Delay(2000);
-            DeathMenu = false;
-            MusicStart = false;
             gameover = false;
+            DeathMenu = false;
+            startBarrier = false;
             printf("게임오버됨!\n");
         }
     }
-
     close();
     return 0;
 }
