@@ -7,30 +7,50 @@
 #include "Example.h"
 #include <stdlib.h>
 #include <time.h>
+#include "Intro.h"
+#include "Setting.h"
+#include "Player.h"
 
+// 랜더러, 창
 SDL_Renderer* Renderer = NULL;
 SDL_Window* window = NULL;
+
+//폰트
 TTF_Font* font = NULL;
 TTF_Font* countFont = NULL;
+
+//이미지
 SDL_Texture* fish = NULL;
 SDL_Texture* startimg = NULL;
 SDL_Texture* background = NULL;
 SDL_Texture* fishgame = NULL;
 SDL_Texture* start = NULL;
 SDL_Texture* quit1 = NULL;
+SDL_Texture* setting = NULL;
 SDL_Texture* fishselete = NULL;
 SDL_Texture* gameback = NULL;
 SDL_Texture* ready = NULL;
 SDL_Texture* go = NULL;
 SDL_Texture* barrier = NULL;
+SDL_Texture* Death = NULL;
+SDL_Texture* CheckConsole = NULL;
+SDL_Texture* SetWindow = NULL;
+
+//소리
 Mix_Music* music = NULL;
 Mix_Music* gameMusic = NULL;
 Mix_Chunk* StartSound = NULL;
 Mix_Chunk* JumpSound = NULL;
 Mix_Chunk* seleteSound = NULL;
-SDL_Texture* Death = NULL;
 Mix_Chunk* DeathSound = NULL;
 
+// 사운드 설정
+int SoundSetting = 100;
+
+// 스프라이트 애니메이션
+SDL_Surface* window_surface = NULL;
+SDL_Surface* player_surface = NULL;
+SDL_Surface* background_surface = NULL;
 
 bool init() {
     if (SDL_Init(SDL_INIT_VIDEO) < 0) {
@@ -43,7 +63,7 @@ bool init() {
         return false;
     }
 
-    window = SDL_CreateWindow("Bird Game", SDL_WINDOWPOS_UNDEFINED, SDL_WINDOWPOS_UNDEFINED, 640, 480, SDL_WINDOW_SHOWN);
+    window = SDL_CreateWindow("Awesome Fish Game", SDL_WINDOWPOS_UNDEFINED, SDL_WINDOWPOS_UNDEFINED, 640, 480, SDL_WINDOW_SHOWN);
     if (window == NULL) {
         printf("SDL 창을 불러오지 못했습니다! SDL Error : %s\n", SDL_GetError());
         SDL_Quit();
@@ -75,7 +95,6 @@ bool init() {
         return false;
     }
 
-
     return true;
 }
 
@@ -86,6 +105,7 @@ bool loadMedia() {
     background = IMG_LoadTexture(Renderer, "Image/Game/background.png");
     start = IMG_LoadTexture(Renderer, "Image/Game/start.png");
     quit1 = IMG_LoadTexture(Renderer, "Image/Game/quit.png");
+    setting = IMG_LoadTexture(Renderer, "Image/Game/setting.png");
     fishselete = IMG_LoadTexture(Renderer, "Image/Game/fishopen.png");
     gameback = IMG_LoadTexture(Renderer, "Image/Game/gameback.png");
     ready = IMG_LoadTexture(Renderer, "Image/Game/Ready.png");
@@ -94,11 +114,13 @@ bool loadMedia() {
     barrier = IMG_LoadTexture(Renderer, "Image/Game/barrier.png");
     gameMusic = Mix_LoadMUS("Songs/gameSong.wav");
     Death = IMG_LoadTexture(Renderer, "Image/Game/gameover.png");
-    
+    SetWindow = IMG_LoadTexture(Renderer, "Image/Game/SettingWindow.png");
+    CheckConsole = IMG_LoadTexture(Renderer, "Image/Game/CheckConsole.png");
+
 
     if (fish == NULL || startimg == NULL || fishgame == NULL || background == NULL ||
         start == NULL || quit1 == NULL || fishselete == NULL || gameback == NULL ||
-        ready == NULL || go == NULL || barrier == NULL || Death == NULL) {
+        ready == NULL || go == NULL || barrier == NULL || Death == NULL || setting == NULL || SetWindow == NULL || CheckConsole == NULL) {
         printf("이미지를 로드하는 데 실패했습니다!\n");
         return false;
     }
@@ -110,7 +132,6 @@ bool loadMedia() {
         printf("음악을 로드하는 데 실패했습니다!\n");
         return false;
     }
-
     return true;
 }
 
@@ -158,44 +179,9 @@ void close() {
     SDL_Quit();
 }
 
-//물고기 시작 위치값
-int y = 100;
-int x = 550;
-//장애물 y값 범위
-int a = -300;
-int b = 0;
-
-
 bool gameover = false;
 
-bool Jump = false;
-
 bool startBarrier = false;
-
-void GravitySetting() { //물고기의 움직임 조절 함수
-    y += 2; // 물고기를 떨어뜨리는 코드
-    if (y > 480) { //바닥으로 떨어졌을 때 게임오버 화면 뜨게 하는 코드
-        y = 100;
-        gameover = true;
-    }
-    if (Jump == true) {
-        if (y < 0) //물고기가 화면을 넘어가는 걸 방지하는 코드
-            y = 0;
-        for (int i = 0; i < 10; i++)
-        {
-            y -= 6;
-        }
-        Jump = false;
-        
-    }
-    // 장애물 움직임 코드
-    x -= 4;
-    if (x < -300) {
-        x = 550;
-        startBarrier = false;
-    }
-    // 물고기 오브젝트를 넘어갈 시 신호를 보냄
-}
 
 int main(int argc, char* argv[]) {
     if (!init()) {
@@ -205,23 +191,66 @@ int main(int argc, char* argv[]) {
     if (!loadMedia()) {
         printf("이미지를 불러오는데 실패했습니다!\n");
         return false;
-    }
+    }      
+
     bool startAudio = false;
     bool MusicStart = false;
     bool gameMusicstart = false;
     bool gameMusicend = false;
     bool isDestroyed = false;
+    bool SettingWindow = false;
     bool gameStart = false;
-    bool selete = false;
+    int seleteState = 0;
     bool start1 = false;
     bool Ready = true;
     bool readyDelete = false;
     bool DeathMenu = false;
+    bool SoundSetComplete = false;
+    bool ClearRenderer = false;
+    bool SoundOn = false;
     int y1 = 0;
 
     SDL_Event event;
     int quit = 0;
 
+    
+    SDL_Rect rcSprite = { 0, 0, 100, 100 };
+    int fish_idx = 0;
+    int fish_jump_idx = 0;
+    int fish_state = 0;
+    bool isJumping = false;
+
+    window_surface = SDL_GetWindowSurface(window);
+    if (window_surface == NULL) {
+        printf("Failed to get window surface! SDL Error: %s\n", SDL_GetError());
+        SDL_DestroyWindow(window);
+        SDL_Quit();
+        return 0;
+    }
+
+    //배경 이미지 로드
+    background_surface = SDL_LoadBMP("Image/Player/background.bmp");
+    if (background_surface == NULL) {
+        printf("Failed to load background image! SDL Error: %s\n", SDL_GetError());
+        SDL_DestroyWindow(window);
+        SDL_Quit();
+        return 0;
+    }
+
+    // 플레이어 이미지 로드
+    player_surface = SDL_LoadBMP("Image/Game/fish_Padak-Sheet.bmp");
+    if (player_surface == NULL) {
+        printf("Failed to load player image! SDL Error: %s\n", SDL_GetError());
+        SDL_FreeSurface(background_surface);
+        SDL_DestroyWindow(window);
+        SDL_Quit();
+        return 0;
+    }
+
+    //플레이어 이미지 배경 투명하게 하기
+    SDL_SetColorKey(player_surface, SDL_TRUE, SDL_MapRGB(player_surface->format, 255, 0, 255));
+
+    loadMedia();
     while (!quit) {
         while (SDL_PollEvent(&event) != 0) { //키 이벤트를 받는 코드
             if (event.type == SDL_QUIT) {
@@ -231,139 +260,142 @@ int main(int argc, char* argv[]) {
                 AudioSound();
                 switch (event.key.keysym.sym) {
                 case SDLK_DOWN:
-                    if(gameStart == false)
+                    if (gameStart == false && SettingWindow == false) {
+                        Mix_Volume(-1, SoundSetting);
                         Mix_PlayChannel(-1, seleteSound, 0);
-                    selete = true;
+                    }
+                    ++seleteState;
+                    if (seleteState > 2) {
+                        seleteState = 0;
+                    }
                     break;
                 case SDLK_UP:
-                    if(gameStart == false)
+                    if (gameStart == false && SettingWindow == false) {
+                        Mix_Volume(-1, SoundSetting);
                         Mix_PlayChannel(-1, seleteSound, 0);
-                    selete = false;
+                    }
+                    --seleteState;
+                    if (seleteState < 0) {
+                        seleteState = 2;
+                    }
                     break;
                 case SDLK_SPACE:
-                    start1 = true;
+                    if (gameStart == false) {
+                        if (seleteState == 0) {
+                            printf("게임 시작!\n");
+                            gameStart = true;
+                            ClearRenderer = true;
+                        }
+                        if (seleteState == 1) {
+                            printf("설정창\n");
+                            SettingWindow = true;
+                        }
+                        if (seleteState == 2){
+                            printf("게임 종료!\n");
+                            close();
+                        }
+                    }
                     break;
                 case SDLK_z:
-                    if(gameStart == true)
-                        Mix_PlayChannel(-1, JumpSound, 0);
-                    Jump = true;
+                    if (gameStart == true && SettingWindow == false) {
+                        if (SoundOn == false) {
+                            Mix_Volume(-1, SoundSetting);
+                            Mix_PlayChannel(-1, JumpSound, 0);
+                            SoundOn = true;
+                        }
+                        isJumping = true;
+                        fish_state = 1;
+                    }
+                    break;
+                }
+                
+            }
+            if (event.type == SDL_KEYUP) {
+                switch (event.key.keysym.sym)
+                {
+                case SDLK_z:
+                    if (gameStart == true && SettingWindow == false) {
+                        isJumping = false;
+                        fish_state = 0;
+                        SoundOn = false;
+                    }
                     break;
                 }
             }
         }
+        SDL_RenderCopy(Renderer, background, NULL, NULL);
         // 첫화면 로직
         if (isDestroyed == false) {
-            SDL_RenderCopy(Renderer, startimg, NULL, NULL);
-            SDL_RenderPresent(Renderer);
-            SDL_Delay(2000);
-            for (int i = 255; i >= 0; i -= 2) {
-                SDL_RenderClear(Renderer);
-                SDL_SetTextureAlphaMod(startimg, i);
-                SDL_RenderCopy(Renderer, startimg, NULL, NULL);
-                SDL_RenderPresent(Renderer);
-            }
+            intro(Renderer, startimg);
             isDestroyed = true;
         }
         // 메인 화면 로직
-        if (isDestroyed == true && gameStart == false && DeathMenu == false) {
+        if (isDestroyed == true && gameStart == false && DeathMenu == false && SettingWindow == false) {
             SDL_RenderClear(Renderer);
-            if (MusicStart == false) {
+            //사운드 조절 적용
+            if (MusicStart == false && SoundSetComplete == false) {
                 Mix_PlayMusic(music, -1);
                 MusicStart = true;
+            }
+            if (MusicStart == true && SoundSetComplete == true) {
+                Mix_PauseMusic();
+                Mix_VolumeMusic(SoundSetting);
+                Mix_ResumeMusic();
+                SoundSetComplete = false;
             }
             SDL_RenderCopy(Renderer, background, NULL, NULL);
             SDL_RenderCopy(Renderer, fishgame, NULL, NULL);
             SDL_RenderCopy(Renderer, start, NULL, NULL);
+            SDL_RenderCopy(Renderer, setting, NULL, NULL);
             SDL_RenderCopy(Renderer, quit1, NULL, NULL);
-
-            if (selete == false) {
+            switch (seleteState)
+            {
+            case 0:
                 stretchTexture(Renderer, 170, 215, 80, 80, fish);
-                if (start1 == true && selete == false) {
-                    printf("게임 시작!\n");
-                    stretchTexture(Renderer, 170, 215, 80, 80, fishselete);
-                    start1 = false;
-                    SDL_RenderClear(Renderer);
-                    gameStart = true;
-                    selete = true;
-                }
+                break;
+            case 1:
+                stretchTexture(Renderer, 130, 275, 80, 80, fish);
+                break;
+            case 2:
+                stretchTexture(Renderer, 180, 325, 80, 80, fish);
+                break;
             }
-            else {
-                stretchTexture(Renderer, 170, 275, 80, 80, fish);
-                if (start1 == true && selete == true) {
-                    printf("게임 종료!");
-                    close();
-                    return 0;
-                }
-            }
-
             SDL_RenderPresent(Renderer);
+        }
+        // 설정창 로직
+        if (gameStart == false && DeathMenu == false && SettingWindow == true) {
+            Setting(Renderer, background, SetWindow, CheckConsole);
+            SoundSettingWindow();
+            printf("\n현재 사운드 : %d\n", SoundSetting);
+            SoundSetComplete = true;
+            SettingWindow = false;
         }
         // 게임 작동 로직
-        if (gameStart == true) {
-            AudioSound();
-            if (startAudio == false) {
-                Mix_FreeMusic(music);
-                Mix_PlayChannel(-1, StartSound, 0);
-                startAudio = true;
-            }
-            SDL_RenderCopy(Renderer, gameback, NULL, NULL);
-            srand((unsigned)time(NULL));
-            if (Ready == true) {
-                stretchTexture(Renderer, 150, y, 100, 100, fish);
-                for (int i = 255; i >= 0; i-=5)
-                {
-                    SDL_RenderClear(Renderer);
-                    SDL_RenderCopy(Renderer, gameback, NULL, NULL);
-                    stretchTexture(Renderer, 150, y, 100, 100, fish);
-                    SDL_SetTextureAlphaMod(ready, i);
-                    SDL_RenderCopy(Renderer, ready, NULL, NULL);
-                    SDL_RenderPresent(Renderer);
-                } //Ready 글자 점점 사리지게 하는 for 문
-                SDL_RenderPresent(Renderer);
-                SDL_RenderCopy(Renderer, go, NULL, NULL);
-                SDL_RenderPresent(Renderer);
-                SDL_Delay(1000);
-                SDL_DestroyTexture(go);
-                SDL_RenderPresent(Renderer);
-                Ready = false;
-            }
-            else {
-                if (startBarrier == true) {
-                    y1 = rand() % (b - a + 1) + a;
-                    startBarrier = false;
-                }
-                if (gameMusicstart == false) {
-                    Mix_PlayMusic(gameMusic, -1);
-                    gameMusicstart = true;
-                }
-                    
-                GravitySetting();
-                stretchTexture(Renderer, 150, y, 100, 100, fish);
-                stretchTexture(Renderer, x, y1, 400, 800, barrier);
-                SDL_RenderPresent(Renderer);
-            }
-        }
-        if (gameover == true) {
-            if (gameMusicend == false) {
-                Mix_FreeMusic(gameMusic);            
-                Mix_PlayChannel(-1, DeathSound, 0);
-                gameMusicend = true;
-            }
-            gameStart = false;
-            DeathMenu = true;
-            // 오류 해결! 오디오 초기화 오류였다고 한다...
-            Mix_HaltMusic(-1); 
-            Mix_HaltChannel(-1);
+        // 게임 시작 시 랜더러는 사용하지 않음 -> Texture가 아닌 Surface로 사용됨
+        if (gameStart == true && DeathMenu == false && SettingWindow == false) {
+            if (ClearRenderer == true) {
             SDL_RenderClear(Renderer);
-            SDL_RenderCopy(Renderer, background, NULL, NULL);
-            SDL_RenderCopy(Renderer, fishselete, NULL, NULL);
-            SDL_RenderCopy(Renderer, Death, NULL, NULL);
             SDL_RenderPresent(Renderer);
-            SDL_Delay(2000);
-            gameover = false;
-            DeathMenu = false;
-            startBarrier = false;
-            printf("게임오버됨!\n");
+            ClearRenderer = false;
+            }
+            if (isJumping == false) {
+                fish_idx++;
+                rcSprite.x = 100 * fish_idx;
+                rcSprite.y = 100 * fish_state;
+                if (fish_idx >= 7)
+                    fish_idx = 0;
+            }
+            if (isJumping == true) {
+                rcSprite.y = 100 * fish_state;
+                rcSprite.x = 100 * fish_jump_idx;
+                fish_jump_idx++;
+                if (fish_jump_idx >= 5)
+                    fish_jump_idx = 0;
+            }
+            SDL_BlitSurface(background_surface, NULL, window_surface, NULL);
+            SDL_BlitSurface(player_surface, &rcSprite, window_surface, NULL);
+            SDL_UpdateWindowSurface(window);
+            SDL_Delay(100);
         }
     }
     close();

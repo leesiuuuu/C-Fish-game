@@ -45,3 +45,5 @@ SDL_Texture* changeTexture(SDL_Renderer* renderer, const char* file) {
 }
 
 
+
+
