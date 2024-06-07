@@ -24,9 +24,6 @@
     <ClCompile Include="Game.c">
       <Filter>소스 파일</Filter>
     </ClCompile>
-    <ClCompile Include="test2.c">
-      <Filter>소스 파일</Filter>
-    </ClCompile>
     <ClCompile Include="char.c">
       <Filter>소스 파일</Filter>
     </ClCompile>
@@ -35,16 +32,10 @@
     <ClInclude Include="Example.h">
       <Filter>헤더 파일</Filter>
     </ClInclude>
-    <ClInclude Include="osuToC.h">
-      <Filter>헤더 파일</Filter>
-    </ClInclude>
     <ClInclude Include="Intro.h">
       <Filter>헤더 파일</Filter>
     </ClInclude>
     <ClInclude Include="Setting.h">
-      <Filter>헤더 파일</Filter>
-    </ClInclude>
-    <ClInclude Include="Player.h">
       <Filter>헤더 파일</Filter>
     </ClInclude>
   </ItemGroup>

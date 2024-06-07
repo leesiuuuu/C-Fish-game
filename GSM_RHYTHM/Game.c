@@ -5,11 +5,8 @@
 #include <SDL_mixer.h>
 #include <SDL_ttf.h>
 #include "Example.h"
-#include <stdlib.h>
-#include <time.h>
 #include "Intro.h"
 #include "Setting.h"
-#include "Player.h"
 
 // 랜더러, 창
 SDL_Renderer* Renderer = NULL;
@@ -31,10 +28,10 @@ SDL_Texture* fishselete = NULL;
 SDL_Texture* gameback = NULL;
 SDL_Texture* ready = NULL;
 SDL_Texture* go = NULL;
-SDL_Texture* barrier = NULL;
 SDL_Texture* Death = NULL;
 SDL_Texture* CheckConsole = NULL;
 SDL_Texture* SetWindow = NULL;
+SDL_Texture* TutorialWindow = NULL;
 
 //소리
 Mix_Music* music = NULL;
@@ -47,10 +44,17 @@ Mix_Chunk* DeathSound = NULL;
 // 사운드 설정
 int SoundSetting = 100;
 
+// 튜토리얼 설정
+bool Tutorial = false;
+
 // 스프라이트 애니메이션
 SDL_Surface* window_surface = NULL;
 SDL_Surface* player_surface = NULL;
 SDL_Surface* background_surface = NULL;
+
+// 폰트 출력
+SDL_Surface* font_surface = NULL;
+SDL_Color color = { 255, 255, 255, SDL_ALPHA_OPAQUE };
 
 bool init() {
     if (SDL_Init(SDL_INIT_VIDEO) < 0) {
@@ -89,7 +93,7 @@ bool init() {
         return false;
     }
 
-    font = TTF_OpenFont("Font/DungGeunMo.otf", 60);
+    font = TTF_OpenFont("Font/DungGeunMo.otf", 40);
     if (font == NULL) {
         printf("폰트를 열 수 없습니다!\n");
         return false;
@@ -111,16 +115,18 @@ bool loadMedia() {
     ready = IMG_LoadTexture(Renderer, "Image/Game/Ready.png");
     go = IMG_LoadTexture(Renderer, "Image/Game/Go.png");
     music = Mix_LoadMUS("Songs/mainSong1.wav");
-    barrier = IMG_LoadTexture(Renderer, "Image/Game/barrier.png");
     gameMusic = Mix_LoadMUS("Songs/gameSong.wav");
     Death = IMG_LoadTexture(Renderer, "Image/Game/gameover.png");
     SetWindow = IMG_LoadTexture(Renderer, "Image/Game/SettingWindow.png");
     CheckConsole = IMG_LoadTexture(Renderer, "Image/Game/CheckConsole.png");
+    TutorialWindow = IMG_LoadTexture(Renderer, "Image/Game/tutorial.png");
 
+    font_surface = TTF_RenderText_Blended(font, "Start in 3", color);
 
     if (fish == NULL || startimg == NULL || fishgame == NULL || background == NULL ||
         start == NULL || quit1 == NULL || fishselete == NULL || gameback == NULL ||
-        ready == NULL || go == NULL || barrier == NULL || Death == NULL || setting == NULL || SetWindow == NULL || CheckConsole == NULL) {
+        ready == NULL || go == NULL || Death == NULL || setting == NULL || SetWindow == NULL || CheckConsole == NULL
+        || TutorialWindow == NULL) {
         printf("이미지를 로드하는 데 실패했습니다!\n");
         return false;
     }
@@ -173,15 +179,12 @@ void close() {
     SDL_DestroyTexture(gameback);
     SDL_DestroyTexture(ready);
     SDL_DestroyTexture(go);
-    SDL_DestroyTexture(barrier);
     TTF_Quit();
     IMG_Quit();
     SDL_Quit();
 }
 
 bool gameover = false;
-
-bool startBarrier = false;
 
 int main(int argc, char* argv[]) {
     if (!init()) {
@@ -208,11 +211,13 @@ int main(int argc, char* argv[]) {
     bool SoundSetComplete = false;
     bool ClearRenderer = false;
     bool SoundOn = false;
+    bool isTutorialoff = false;
     int y1 = 0;
 
     SDL_Event event;
     int quit = 0;
 
+    SDL_Texture* font_Texture = SDL_CreateTextureFromSurface(Renderer, font_surface);
     
     SDL_Rect rcSprite = { 0, 0, 100, 100 };
     int fish_idx = 0;
@@ -285,6 +290,7 @@ int main(int argc, char* argv[]) {
                             printf("게임 시작!\n");
                             gameStart = true;
                             ClearRenderer = true;
+                            Tutorial = true;
                         }
                         if (seleteState == 1) {
                             printf("설정창\n");
@@ -330,7 +336,7 @@ int main(int argc, char* argv[]) {
             isDestroyed = true;
         }
         // 메인 화면 로직
-        if (isDestroyed == true && gameStart == false && DeathMenu == false && SettingWindow == false) {
+        if (isDestroyed == true && gameStart == false && DeathMenu == false && SettingWindow == false && Tutorial == false) {
             SDL_RenderClear(Renderer);
             //사운드 조절 적용
             if (MusicStart == false && SoundSetComplete == false) {
@@ -363,16 +369,55 @@ int main(int argc, char* argv[]) {
             SDL_RenderPresent(Renderer);
         }
         // 설정창 로직
-        if (gameStart == false && DeathMenu == false && SettingWindow == true) {
+        if (gameStart == false && DeathMenu == false && SettingWindow == true && Tutorial == false) {
             Setting(Renderer, background, SetWindow, CheckConsole);
             SoundSettingWindow();
             printf("\n현재 사운드 : %d\n", SoundSetting);
+            printf("\n튜토리얼 토글 : %d\n", Tutorial);
             SoundSetComplete = true;
+            isTutorialoff = true;
             SettingWindow = false;
+        }
+        // 게임 시작 전 튜토리얼 로직
+        if (gameStart == true && DeathMenu == false && SettingWindow == false && Tutorial == true) {
+            if (isTutorialoff == false) {
+            SDL_RenderClear(Renderer);
+            SDL_RenderCopy(Renderer, TutorialWindow, NULL, NULL);
+            SDL_RenderPresent(Renderer);
+            SDL_Delay(2000);
+
+            char countdownText[20];
+            SDL_Texture* font_Texture;
+            SDL_Rect r = { 220, 370, 0, 0 };
+
+            for (int i = 3; i > 0; i--) {
+                //폰트 텍스쳐에 문자를 넣는 코드
+                snprintf(countdownText, sizeof(countdownText), "Start in %d", i);
+                font_surface = TTF_RenderText_Blended(font, countdownText, color);
+                font_Texture = SDL_CreateTextureFromSurface(Renderer, font_surface);
+                SDL_QueryTexture(font_Texture, NULL, NULL, &r.w, &r.h);
+
+                //렌더러 업데이트 함수
+                SDL_RenderClear(Renderer);
+                SDL_RenderCopy(Renderer, TutorialWindow, NULL, NULL);
+                SDL_RenderCopy(Renderer, font_Texture, NULL, &r);
+                SDL_RenderPresent(Renderer);
+                SDL_Delay(1000);
+
+                SDL_FreeSurface(font_surface);
+                SDL_DestroyTexture(font_Texture);
+            }
+
+            Tutorial = false;
+            }
+            else {
+                Tutorial = false;
+            }
+
         }
         // 게임 작동 로직
         // 게임 시작 시 랜더러는 사용하지 않음 -> Texture가 아닌 Surface로 사용됨
-        if (gameStart == true && DeathMenu == false && SettingWindow == false) {
+        if (gameStart == true && DeathMenu == false && SettingWindow == false && Tutorial == false) {
             if (ClearRenderer == true) {
             SDL_RenderClear(Renderer);
             SDL_RenderPresent(Renderer);
