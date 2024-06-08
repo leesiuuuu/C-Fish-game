@@ -46,6 +46,7 @@ int SoundSetting = 100;
 
 // 튜토리얼 설정
 bool Tutorial = false;
+bool isTutorialoff = false;
 
 // 스프라이트 애니메이션
 SDL_Surface* window_surface = NULL;
@@ -211,19 +212,28 @@ int main(int argc, char* argv[]) {
     bool SoundSetComplete = false;
     bool ClearRenderer = false;
     bool SoundOn = false;
-    bool isTutorialoff = false;
-    int y1 = 0;
+    int y1 = 250;
+
 
     SDL_Event event;
     int quit = 0;
 
     SDL_Texture* font_Texture = SDL_CreateTextureFromSurface(Renderer, font_surface);
     
+    //스프라이트 애니메이션 프레임 위치
     SDL_Rect rcSprite = { 0, 0, 100, 100 };
+    //스프라이트 위치
+    SDL_Rect SpritePos = { 150, y1, 100, 100 };
     int fish_idx = 0;
     int fish_jump_idx = 0;
     int fish_state = 0;
     bool isJumping = false;
+    int jumpOffset = 0;
+    int jumpDirection = 1;
+    int jumpspeed = 5;
+    int gravity = 1;
+    int maxJumpHeight = 50;
+    bool isFalling = false;
 
     window_surface = SDL_GetWindowSurface(window);
     if (window_surface == NULL) {
@@ -294,38 +304,47 @@ int main(int argc, char* argv[]) {
                         }
                         if (seleteState == 1) {
                             printf("설정창\n");
+                            SoundSetComplete = false;
                             SettingWindow = true;
                         }
-                        if (seleteState == 2){
+                        if (seleteState == 2) {
                             printf("게임 종료!\n");
                             close();
                         }
                     }
                     break;
                 case SDLK_z:
-                    if (gameStart == true && SettingWindow == false) {
-                        if (SoundOn == false) {
-                            Mix_Volume(-1, SoundSetting);
-                            Mix_PlayChannel(-1, JumpSound, 0);
-                            SoundOn = true;
+                    if (Tutorial == false) {
+                        if (gameStart == true && SettingWindow == false) {
+                            if (!isJumping && !isFalling) {
+                                if (SoundOn == false) {
+                                    Mix_Volume(-1, SoundSetting);
+                                    Mix_PlayChannel(-1, JumpSound, 0);
+                                    SoundOn = true;
+                                }
+                                isJumping = true;
+                                jumpOffset = 0;
+                                jumpspeed = 15;
+                                fish_state = 1;
+                            }
                         }
-                        isJumping = true;
-                        fish_state = 1;
+                    }
+                    if (Tutorial == true) {
+                        break;
                     }
                     break;
                 }
-                
             }
             if (event.type == SDL_KEYUP) {
-                switch (event.key.keysym.sym)
-                {
-                case SDLK_z:
-                    if (gameStart == true && SettingWindow == false) {
-                        isJumping = false;
-                        fish_state = 0;
-                        SoundOn = false;
-                    }
-                    break;
+                switch (event.key.keysym.sym) {
+                    case SDLK_z:
+                        if (isJumping) {
+                            fish_state = 0;
+                            isJumping = false;
+                            isFalling = true;
+                            SoundOn = false;
+                        }
+
                 }
             }
         }
@@ -336,7 +355,7 @@ int main(int argc, char* argv[]) {
             isDestroyed = true;
         }
         // 메인 화면 로직
-        if (isDestroyed == true && gameStart == false && DeathMenu == false && SettingWindow == false && Tutorial == false) {
+        if (isDestroyed == true && gameStart == false && DeathMenu == false && SettingWindow == false) {
             SDL_RenderClear(Renderer);
             //사운드 조절 적용
             if (MusicStart == false && SoundSetComplete == false) {
@@ -369,76 +388,93 @@ int main(int argc, char* argv[]) {
             SDL_RenderPresent(Renderer);
         }
         // 설정창 로직
-        if (gameStart == false && DeathMenu == false && SettingWindow == true && Tutorial == false) {
+        if (gameStart == false && DeathMenu == false && SettingWindow == true) {
             Setting(Renderer, background, SetWindow, CheckConsole);
             SoundSettingWindow();
             printf("\n현재 사운드 : %d\n", SoundSetting);
-            printf("\n튜토리얼 토글 : %d\n", Tutorial);
+            printf("\n튜토리얼 꺼짐 토글 : %d\n", isTutorialoff);
             SoundSetComplete = true;
-            isTutorialoff = true;
             SettingWindow = false;
         }
         // 게임 시작 전 튜토리얼 로직
         if (gameStart == true && DeathMenu == false && SettingWindow == false && Tutorial == true) {
             if (isTutorialoff == false) {
-            SDL_RenderClear(Renderer);
-            SDL_RenderCopy(Renderer, TutorialWindow, NULL, NULL);
-            SDL_RenderPresent(Renderer);
-            SDL_Delay(2000);
-
-            char countdownText[20];
-            SDL_Texture* font_Texture;
-            SDL_Rect r = { 220, 370, 0, 0 };
-
-            for (int i = 3; i > 0; i--) {
-                //폰트 텍스쳐에 문자를 넣는 코드
-                snprintf(countdownText, sizeof(countdownText), "Start in %d", i);
-                font_surface = TTF_RenderText_Blended(font, countdownText, color);
-                font_Texture = SDL_CreateTextureFromSurface(Renderer, font_surface);
-                SDL_QueryTexture(font_Texture, NULL, NULL, &r.w, &r.h);
-
-                //렌더러 업데이트 함수
                 SDL_RenderClear(Renderer);
                 SDL_RenderCopy(Renderer, TutorialWindow, NULL, NULL);
-                SDL_RenderCopy(Renderer, font_Texture, NULL, &r);
                 SDL_RenderPresent(Renderer);
-                SDL_Delay(1000);
+                SDL_Delay(2000);
+                char countdownText[20];
+                SDL_Texture* font_Texture;
+                SDL_Rect r = { 220, 370, 0, 0 };
+                for (int i = 3; i > 0; i--) {
+                    //폰트 텍스쳐에 문자를 넣는 코드
+                    snprintf(countdownText, sizeof(countdownText), "Start in %d", i);
+                    font_surface = TTF_RenderText_Blended(font, countdownText, color);
+                    font_Texture = SDL_CreateTextureFromSurface(Renderer, font_surface);
+                    SDL_QueryTexture(font_Texture, NULL, NULL, &r.w, &r.h);
 
-                SDL_FreeSurface(font_surface);
-                SDL_DestroyTexture(font_Texture);
+                    //렌더러 업데이트 함수
+                    SDL_RenderClear(Renderer);
+                    SDL_RenderCopy(Renderer, TutorialWindow, NULL, NULL);
+                    SDL_RenderCopy(Renderer, font_Texture, NULL, &r);
+                    SDL_RenderPresent(Renderer);
+                    SDL_Delay(1000);
+
+                    SDL_FreeSurface(font_surface);
+                    SDL_DestroyTexture(font_Texture);
+                }
             }
-
             Tutorial = false;
-            }
-            else {
-                Tutorial = false;
-            }
-
         }
         // 게임 작동 로직
         // 게임 시작 시 랜더러는 사용하지 않음 -> Texture가 아닌 Surface로 사용됨
         if (gameStart == true && DeathMenu == false && SettingWindow == false && Tutorial == false) {
             if (ClearRenderer == true) {
-            SDL_RenderClear(Renderer);
-            SDL_RenderPresent(Renderer);
-            ClearRenderer = false;
+                SDL_RenderClear(Renderer);
+                SDL_RenderPresent(Renderer);
+                ClearRenderer = false;
             }
-            if (isJumping == false) {
-                fish_idx++;
-                rcSprite.x = 100 * fish_idx;
-                rcSprite.y = 100 * fish_state;
-                if (fish_idx >= 7)
-                    fish_idx = 0;
-            }
-            if (isJumping == true) {
+            fish_idx++;
+            rcSprite.x = 100 * fish_idx;
+            rcSprite.y = 100 * fish_state;
+            if (fish_idx >= 7)
+                fish_idx = 0;
+            //상태에 맞게 애니메이션 변하는 if문
+            if (isJumping || isFalling) {
+                fish_jump_idx++;
                 rcSprite.y = 100 * fish_state;
                 rcSprite.x = 100 * fish_jump_idx;
-                fish_jump_idx++;
                 if (fish_jump_idx >= 5)
                     fish_jump_idx = 0;
             }
+            //점프 상태일 시 y값 변경
+            if (isJumping) {
+                jumpOffset -= jumpspeed;
+                jumpspeed -= gravity;
+            }
+            //떨어지는 상태일 시 y값 번경
+            else if (isFalling) {
+                jumpOffset += jumpspeed;
+                jumpspeed += gravity;
+                fish_state = 1;
+                if (jumpOffset >= 0) {
+                    jumpOffset = 0;
+                    isFalling = false;
+                    fish_state = 0;
+                }
+            }
+            //점프 범위 제한 조건문
+            if (jumpOffset < -150) {
+                jumpOffset = -150;
+            }
+            else if (jumpOffset > 150) {
+                jumpOffset = 150;
+            }
+            //지정한 y값에 오프셋을 더함
+            SpritePos.y = 250 + jumpOffset;
             SDL_BlitSurface(background_surface, NULL, window_surface, NULL);
-            SDL_BlitSurface(player_surface, &rcSprite, window_surface, NULL);
+            SDL_BlitSurface(player_surface, &rcSprite, window_surface, &SpritePos);
+            //화면 업데이트
             SDL_UpdateWindowSurface(window);
             SDL_Delay(100);
         }

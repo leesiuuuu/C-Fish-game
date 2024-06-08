@@ -4,7 +4,7 @@
 #include <stdbool.h>
 
 extern int SoundSetting;
-extern bool Tutorial;
+extern bool isTutorialoff;
 int TutorialSetting();
 
 void Setting(SDL_Renderer* rend, SDL_Texture* BG, SDL_Texture* Window, SDL_Texture* Check) {
@@ -61,13 +61,13 @@ int SoundSettingWindow() {
         int x;
         x = TutorialSetting();
         if (x == 1) {
-            Tutorial = true;
+            isTutorialoff = true;
             printf("설정이 완료되었습니다!\n");
             return Sound;
         }
         else {
+            isTutorialoff = false;
             printf("설정이 완료되었습니다!\n");
-            Tutorial = false;
             return Sound;
         }
     }
@@ -75,9 +75,9 @@ int SoundSettingWindow() {
 
 int TutorialSetting() {
     system("cls");
+    char check;
     while (true)
     {
-        char check = 0;
         printf("튜토리얼을 끄시겠습니까?(이 설정을 활성화 시, 앞으로 튜토리얼은 나오지 않습니다!)\n");
         printf("당신은 이 설정을 언제든 키고 끌 수 있습니다!\n");
         printf("(y/n) : ");
