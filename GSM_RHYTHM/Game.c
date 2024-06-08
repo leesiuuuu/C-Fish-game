@@ -7,6 +7,8 @@
 #include "Example.h"
 #include "Intro.h"
 #include "Setting.h"
+#include <stdlib.h>
+#include <time.h>
 
 // 랜더러, 창
 SDL_Renderer* Renderer = NULL;
@@ -52,6 +54,9 @@ bool isTutorialoff = false;
 SDL_Surface* window_surface = NULL;
 SDL_Surface* player_surface = NULL;
 SDL_Surface* background_surface = NULL;
+
+//방해물
+SDL_Surface* Thorn = NULL;
 
 // 폰트 출력
 SDL_Surface* font_surface = NULL;
@@ -213,7 +218,11 @@ int main(int argc, char* argv[]) {
     bool ClearRenderer = false;
     bool SoundOn = false;
     int y1 = 250;
+    int x1 = 800;
 
+
+    srand(time(NULL));
+    int ThornOrderRandom = 0;
 
     SDL_Event event;
     int quit = 0;
@@ -224,16 +233,25 @@ int main(int argc, char* argv[]) {
     SDL_Rect rcSprite = { 0, 0, 100, 100 };
     //스프라이트 위치
     SDL_Rect SpritePos = { 150, y1, 100, 100 };
+    // 장애물 스프라이트 애니메이션 위치
+    SDL_Rect objSprite = { 0, 0, 100, 100 };
+    //장애물 위치
+    SDL_Rect ThornPos = { x1, 250, 100, 100 };
     int fish_idx = 0;
     int fish_jump_idx = 0;
     int fish_state = 0;
+
+    int Obj_idx = 0;
+    int ObjSpeed = 15;
+
     bool isJumping = false;
     int jumpOffset = 0;
     int jumpDirection = 1;
-    int jumpspeed = 5;
+    int jumpspeed = 20;
     int gravity = 1;
     int maxJumpHeight = 50;
     bool isFalling = false;
+    bool ThornPassed = false;
 
     window_surface = SDL_GetWindowSurface(window);
     if (window_surface == NULL) {
@@ -262,8 +280,20 @@ int main(int argc, char* argv[]) {
         return 0;
     }
 
+    //장애물 이미지 로드
+    Thorn = SDL_LoadBMP("Image/Game/Objects.bmp");
+    if (Thorn == NULL) {
+        printf("Failed to load Thorn image! SDL Error: %s\n", SDL_GetError());
+        SDL_FreeSurface(background_surface);
+        SDL_DestroyWindow(window);
+        SDL_Quit();
+        return 0;
+    }
+
     //플레이어 이미지 배경 투명하게 하기
     SDL_SetColorKey(player_surface, SDL_TRUE, SDL_MapRGB(player_surface->format, 255, 0, 255));
+    //장애물 이미지 배경 투명하게 하기
+    SDL_SetColorKey(Thorn, SDL_TRUE, SDL_MapRGB(Thorn->format, 255, 0, 255));
 
     loadMedia();
     while (!quit) {
@@ -324,7 +354,6 @@ int main(int argc, char* argv[]) {
                                 }
                                 isJumping = true;
                                 jumpOffset = 0;
-                                jumpspeed = 15;
                                 fish_state = 1;
                             }
                         }
@@ -434,11 +463,16 @@ int main(int argc, char* argv[]) {
                 SDL_RenderPresent(Renderer);
                 ClearRenderer = false;
             }
+            Obj_idx++;
             fish_idx++;
+            objSprite.x = 100 * Obj_idx;
+            objSprite.y = 100 * 1;
             rcSprite.x = 100 * fish_idx;
             rcSprite.y = 100 * fish_state;
             if (fish_idx >= 7)
                 fish_idx = 0;
+            if (Obj_idx >= 7)
+                Obj_idx = 0;
             //상태에 맞게 애니메이션 변하는 if문
             if (isJumping || isFalling) {
                 fish_jump_idx++;
@@ -472,8 +506,11 @@ int main(int argc, char* argv[]) {
             }
             //지정한 y값에 오프셋을 더함
             SpritePos.y = 250 + jumpOffset;
+            ThornPos.x -= ObjSpeed;
+            // 장애물이 화면 왼쪽 끝을 벗어나면 다시 화면 오른쪽 끝으로 이동
             SDL_BlitSurface(background_surface, NULL, window_surface, NULL);
             SDL_BlitSurface(player_surface, &rcSprite, window_surface, &SpritePos);
+            SDL_BlitSurface(Thorn, &objSprite, window_surface, &ThornPos);
             //화면 업데이트
             SDL_UpdateWindowSurface(window);
             SDL_Delay(100);
