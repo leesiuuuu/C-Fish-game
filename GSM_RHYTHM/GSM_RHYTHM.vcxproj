@@ -147,6 +147,7 @@
     <ClInclude Include="Example.h" />
     <ClInclude Include="Intro.h" />
     <ClInclude Include="Setting.h" />
+    <ClInclude Include="Transition.h" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">

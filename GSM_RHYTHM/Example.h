@@ -21,7 +21,6 @@ bool Audio_Check(Mix_Music* Aud) {
     return false;
 }
 
-
 void stretchTexture(SDL_Renderer* renderer, int x, int y, int w, int h, SDL_Texture* texture) {
     SDL_Rect src, dst;
 
@@ -43,7 +42,6 @@ SDL_Texture* changeTexture(SDL_Renderer* renderer, const char* file) {
     }
     return changedTex;
 }
-
 
 //첫번째 Rect와 두번째 Rect의 거리 계산 함수
 double calculateDistance(SDL_Rect noteRect, SDL_Rect noteCheck) {
