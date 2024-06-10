@@ -75,7 +75,7 @@ int SoundSettingWindow() {
 
 int TutorialSetting() {
     system("cls");
-    char check;
+    char check = 0;
     while (true)
     {
         printf("튜토리얼을 끄시겠습니까?(이 설정을 활성화 시, 앞으로 튜토리얼은 나오지 않습니다!)\n");

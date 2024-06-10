@@ -31,10 +31,6 @@ SDL_Texture* start = NULL;
 SDL_Texture* quit1 = NULL;
 SDL_Texture* setting = NULL;
 SDL_Texture* fishselete = NULL;
-SDL_Texture* gameback = NULL;
-SDL_Texture* ready = NULL;
-SDL_Texture* go = NULL;
-SDL_Texture* Death = NULL;
 SDL_Texture* CheckConsole = NULL;
 SDL_Texture* SetWindow = NULL;
 SDL_Texture* TutorialWindow = NULL;
@@ -71,8 +67,6 @@ SDL_Surface* Point_surface = NULL;
 
 // 게임 오버 서페이스
 SDL_Surface* GameOver = NULL;
-SDL_Texture* BlackBackground = NULL;
-SDL_Texture* Loading = NULL;
 
 //아이콘
 SDL_Surface* Icon = NULL;
@@ -166,22 +160,15 @@ bool loadMedia() {
     quit1 = IMG_LoadTexture(Renderer, "Image/Game/quit.png");
     setting = IMG_LoadTexture(Renderer, "Image/Game/setting.png");
     fishselete = IMG_LoadTexture(Renderer, "Image/Game/fishopen.png");
-    gameback = IMG_LoadTexture(Renderer, "Image/Game/gameback.png");
-    ready = IMG_LoadTexture(Renderer, "Image/Game/Ready.png");
-    go = IMG_LoadTexture(Renderer, "Image/Game/Go.png");
     music = Mix_LoadMUS("Songs/mainSong1.wav");
     gameMusic = Mix_LoadMUS("Songs/gameSong.wav");
-    Death = IMG_LoadTexture(Renderer, "Image/Game/gameover.png");
     SetWindow = IMG_LoadTexture(Renderer, "Image/Game/SettingWindow.png");
     CheckConsole = IMG_LoadTexture(Renderer, "Image/Game/CheckConsole.png");
     TutorialWindow = IMG_LoadTexture(Renderer, "Image/Game/tutorial.png");
-    BlackBackground = IMG_LoadTexture(Renderer, "Image/Game/Black.png");
-    Loading = IMG_LoadTexture(Renderer, "Image/Game/Loading.png");
     Icon = IMG_Load("Image/Game/Fish_icon.bmp");
 
     if (fish == NULL || startimg == NULL || fishgame == NULL || background == NULL ||
-        start == NULL || quit1 == NULL || fishselete == NULL || gameback == NULL ||
-        ready == NULL || go == NULL || Death == NULL || setting == NULL || SetWindow == NULL || CheckConsole == NULL
+        start == NULL || quit1 == NULL || fishselete == NULL || setting == NULL || SetWindow == NULL || CheckConsole == NULL
         || TutorialWindow == NULL || Icon == NULL) {
         printf("이미지를 로드하는 데 실패했습니다!\n");
         return false;
@@ -228,10 +215,15 @@ bool AudioSound() {
 }
 
 void close() {
-    //SDL_DestroyTexture(Texture);
     SDL_DestroyRenderer(Renderer);
     SDL_DestroyWindow(window);
-    //Mix_FreeMusic(music);
+    Mix_FreeMusic(music);
+    Mix_FreeMusic(gameMusic);
+    Mix_FreeChunk(StartSound);
+    Mix_FreeChunk(JumpSound);
+    Mix_FreeChunk(DeathSound);
+    Mix_FreeChunk(seleteSound);
+    Mix_FreeChunk(ClearSound);
     SDL_DestroyRenderer(Renderer);
     SDL_DestroyWindow(window);
     Mix_CloseAudio();
@@ -242,9 +234,9 @@ void close() {
     SDL_DestroyTexture(start);
     SDL_DestroyTexture(quit1);
     SDL_DestroyTexture(fishselete);
-    SDL_DestroyTexture(gameback);
-    SDL_DestroyTexture(ready);
-    SDL_DestroyTexture(go);
+    SDL_DestroyTexture(SetWindow);
+    SDL_DestroyTexture(setting);
+    SDL_DestroyTexture(CheckConsole);
     TTF_Quit();
     IMG_Quit();
     SDL_Quit();
@@ -277,8 +269,11 @@ int main(int argc, char* argv[]) {
     bool SoundSetComplete = false;
     bool ClearRenderer = false;
     bool SoundOn = false;
+    bool ChangeOn = false;
     int y1 = 250;
     int x1 = 800;
+
+    int Pos1 = -150;
 
 
     srand(time(NULL));
@@ -576,7 +571,7 @@ int main(int argc, char* argv[]) {
                 ThornPassed = false;
             }
             Distance = calculateDistance(SpritePos, ThornPos);
-            if (Distance < 80) {
+            if (Distance < 70) {
                 printf("죽었습니다!\n");
                 gameover = true;
             }
@@ -585,7 +580,6 @@ int main(int argc, char* argv[]) {
                 MIN_SPEED += 3;
                 Mix_Volume(-1, SoundSetting);
                 Mix_PlayChannel(-1, ClearSound, 0);
-
                 SpeedUp = true;
             }
             snprintf(PointText, sizeof(PointText), "%d", Point);
@@ -637,6 +631,19 @@ int main(int argc, char* argv[]) {
                 jumpOffset = 150;
             }
             //지정한 y값에 오프셋을 더함
+            bgPos.x = Pos1;
+            if (ChangeOn == false) {
+                Pos1 -= 1;
+                if (Pos1 < -250) {
+                    ChangeOn = true;
+                }
+            }
+            if (ChangeOn == true) {
+                Pos1 += 1;
+                if (Pos1 > -50) {
+                    ChangeOn = false;
+                }
+            }
             SpritePos.y = 250 + jumpOffset;
             ThornPos.x = x1;
             x1 -= ObjSpeed;
@@ -658,7 +665,9 @@ int main(int argc, char* argv[]) {
             x1 = 800;
             ThornPos.x = x1;
             Mix_PauseMusic(gameMusic);
-            if (Point < 10)
+            if (Point == 0)
+                Rate = TTF_RenderText_Blended(YourRateis, "FFF", Red);
+            else if (Point < 10)
                 Rate = TTF_RenderText_Blended(YourRateis, "F", Red);
             else if (Point >= 10 && Point < 20)
                 Rate = TTF_RenderText_Blended(YourRateis, "E", Red);
@@ -668,8 +677,10 @@ int main(int argc, char* argv[]) {
                 Rate = TTF_RenderText_Blended(YourRateis, "C", Blue);
             else if (Point >= 40 && Point < 50)
                 Rate = TTF_RenderText_Blended(YourRateis, "B", Pink);
-            else if (Point >= 50)
+            else if (Point >= 50 && Point < 80)
                 Rate = TTF_RenderText_Blended(YourRateis, "A", Pink);
+            else if (Point >= 80)
+                Rate = TTF_RenderText_Blended(YourRateis, "S", Pink);
             if (DeathMenu == false) {
                 Mix_Volume(-1, SoundSetting);
                 Mix_PlayChannel(-1, DeathSound, 0);
@@ -677,12 +688,24 @@ int main(int argc, char* argv[]) {
             }
             if (ThornOrderRandom == 0) {
                 GameOver = SDL_LoadBMP("Image/Game/gameover1.bmp");
+                if (GameOver == NULL) {
+                    printf("이미지 파일 불러올 수 없음!\n");
+                    close();
+                }
             }
-            else if (ThornOrderRandom == 1) {
+            if (ThornOrderRandom == 1) {
                 GameOver = SDL_LoadBMP("Image/Game/gameover2.bmp");
+                if (GameOver == NULL) {
+                    printf("이미지 파일 불러올 수 없음!\n");
+                    close();
+                }
             }
-            else if (ThornOrderRandom == 2) {
+            if (ThornOrderRandom == 2) {
                 GameOver = SDL_LoadBMP("Image/Game/gameover3.bmp");
+                if (GameOver == NULL) {
+                    printf("이미지 파일 불러올 수 없음!\n");
+                    close();
+                }
             }
             char PointValue[20];
             SDL_Surface* GameoverPoint = NULL;
@@ -692,13 +715,9 @@ int main(int argc, char* argv[]) {
             SDL_Rect p = { 400, 350, 0, 0 };
             SDL_Rect RatePos = { 450, 230, 0, 0 };
             SDL_Rect YRIPos = { 350, 200, 0, 0 };
-            YourRateisTexture = SDL_CreateTextureFromSurface(Renderer, YRI);
-            YourRateisNTexture = SDL_CreateTextureFromSurface(Renderer, Rate);
             SDL_Texture* gameoverScreen = SDL_CreateTextureFromSurface(Renderer, GameOver);
             SDL_FreeSurface(GameOver);
-            SDL_RenderClear(Renderer);
             SDL_RenderCopy(Renderer, gameoverScreen, NULL, NULL);
-            SDL_RenderPresent(Renderer);
             snprintf(PointValue, sizeof(PointValue), "Point : %d", Point);
             GameoverPoint = TTF_RenderText_Blended(countFont, PointValue, black);
             GameoverPointTexture = SDL_CreateTextureFromSurface(Renderer, GameoverPoint);
