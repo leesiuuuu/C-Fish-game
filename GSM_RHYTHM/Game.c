@@ -566,7 +566,9 @@ int main(int argc, char* argv[]) {
             if (ThornPassed == true) {
                 ObjSpeed = rand() % (MAX_SPEED - MIN_SPEED + 1) + MIN_SPEED;
                 ++Point;
-                ThornOrderRandom = rand() % 3;
+                ThornOrderRandom = rand() % 51;
+                if (ThornOrderRandom > 2 && ThornOrderRandom != 50)
+                    ThornOrderRandom = rand() % 3;
                 SpeedUp = false;
                 ThornPassed = false;
             }
@@ -589,7 +591,13 @@ int main(int argc, char* argv[]) {
             Bgidx++;
             bgSprite.x = 1024 * Bgidx;
             objSprite.x = 100 * Obj_idx;
-            objSprite.y = 100 * ThornOrderRandom;
+            if (ThornOrderRandom == 50) {
+                objSprite.y = 100 * 3;
+            }
+            else {
+                objSprite.y = 100 * ThornOrderRandom;
+            }
+
             rcSprite.x = 100 * fish_idx;
             rcSprite.y = 100 * fish_state;
             if (fish_idx >= 7)
@@ -681,6 +689,9 @@ int main(int argc, char* argv[]) {
                 Rate = TTF_RenderText_Blended(YourRateis, "A", Pink);
             else if (Point >= 80)
                 Rate = TTF_RenderText_Blended(YourRateis, "S", Pink);
+            if (ThornOrderRandom == 50) {
+                Rate = TTF_RenderText_Blended(YourRateis, "?", black);
+            }
             if (DeathMenu == false) {
                 Mix_Volume(-1, SoundSetting);
                 Mix_PlayChannel(-1, DeathSound, 0);
@@ -702,6 +713,13 @@ int main(int argc, char* argv[]) {
             }
             if (ThornOrderRandom == 2) {
                 GameOver = SDL_LoadBMP("Image/Game/gameover3.bmp");
+                if (GameOver == NULL) {
+                    printf("이미지 파일 불러올 수 없음!\n");
+                    close();
+                }
+            }
+            if (ThornOrderRandom == 3) {
+                GameOver = SDL_LoadBMP("Image/Game/gameover4.bmp");
                 if (GameOver == NULL) {
                     printf("이미지 파일 불러올 수 없음!\n");
                     close();
