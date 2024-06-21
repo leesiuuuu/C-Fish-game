@@ -673,6 +673,7 @@ int main(int argc, char* argv[]) {
             x1 = 800;
             ThornPos.x = x1;
             Mix_PauseMusic(gameMusic);
+            // 랭킹 부여
             if (Point == 0)
                 Rate = TTF_RenderText_Blended(YourRateis, "FFF", Red);
             else if (Point < 10)
@@ -692,6 +693,7 @@ int main(int argc, char* argv[]) {
             if (ThornOrderRandom == 50) {
                 Rate = TTF_RenderText_Blended(YourRateis, "?", black);
             }
+            //충돌한 장애물에 따라 게임 오버 화면 다르게 출력
             if (DeathMenu == false) {
                 Mix_Volume(-1, SoundSetting);
                 Mix_PlayChannel(-1, DeathSound, 0);
@@ -718,13 +720,14 @@ int main(int argc, char* argv[]) {
                     close();
                 }
             }
-            if (ThornOrderRandom == 3) {
+            if (ThornOrderRandom == 50) {
                 GameOver = SDL_LoadBMP("Image/Game/gameover4.bmp");
                 if (GameOver == NULL) {
                     printf("이미지 파일 불러올 수 없음!\n");
                     close();
                 }
             }
+            //점수 문자열 저장
             char PointValue[20];
             SDL_Surface* GameoverPoint = NULL;
             SDL_Texture* GameoverPointTexture = NULL;
@@ -733,15 +736,20 @@ int main(int argc, char* argv[]) {
             SDL_Rect p = { 400, 350, 0, 0 };
             SDL_Rect RatePos = { 450, 230, 0, 0 };
             SDL_Rect YRIPos = { 350, 200, 0, 0 };
+            //서페어스를 텍스쳐로 변환
             SDL_Texture* gameoverScreen = SDL_CreateTextureFromSurface(Renderer, GameOver);
             SDL_FreeSurface(GameOver);
             SDL_RenderCopy(Renderer, gameoverScreen, NULL, NULL);
+            SDL_RenderPresent(Renderer);
+            //포인트 값을 저장
             snprintf(PointValue, sizeof(PointValue), "Point : %d", Point);
             GameoverPoint = TTF_RenderText_Blended(countFont, PointValue, black);
             GameoverPointTexture = SDL_CreateTextureFromSurface(Renderer, GameoverPoint);
+            //글자 출력을 위한 저장
             YRI = TTF_RenderText_Blended(YRIN, "Your Rate is...", black);
             YourRateisNTexture = SDL_CreateTextureFromSurface(Renderer, YRI);
             YourRateisTexture = SDL_CreateTextureFromSurface(Renderer, Rate);
+            //텍스쳐 출력
             SDL_QueryTexture(GameoverPointTexture, NULL, NULL, &p.w, &p.h);
             SDL_QueryTexture(YourRateisNTexture, NULL, NULL, &YRIPos.w, &YRIPos.h);
             SDL_QueryTexture(YourRateisTexture, NULL, NULL, &RatePos.w, &RatePos.h);

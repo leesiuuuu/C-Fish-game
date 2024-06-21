@@ -45,15 +45,12 @@ SDL_Texture* changeTexture(SDL_Renderer* renderer, const char* file) {
 
 //첫번째 Rect와 두번째 Rect의 거리 계산 함수
 double calculateDistance(SDL_Rect noteRect, SDL_Rect noteCheck) {
-    // 노트의 중심 좌표 계산
     double noteCenterX = noteRect.x + noteRect.w / 2;
     double noteCenterY = noteRect.y + noteRect.h / 2;
 
-    // 노트 확인 도형의 중심 좌표 계산
     double noteCheckCenterX = noteCheck.x + noteCheck.w / 2;
     double noteCheckCenterY = noteCheck.y + noteCheck.h / 2;
 
-    // 두 점 사이의 거리 계산
     double distance = sqrt(pow(noteCenterX - noteCheckCenterX, 2) + pow(noteCenterY - noteCheckCenterY, 2));
     return distance;
 }

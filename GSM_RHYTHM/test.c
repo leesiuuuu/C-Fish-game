@@ -5,7 +5,6 @@
 #include <SDL_image.h>
 #include "Example.h"
 #include <SDL_audio.h>
-#include "osuToC.h"
 
 #define SCREEN_WIDTH 640
 #define SCREEN_HEIGHT 480
