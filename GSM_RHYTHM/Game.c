@@ -74,6 +74,7 @@ SDL_Surface* font_surface = NULL;
 SDL_Color color = { 255, 255, 255, SDL_ALPHA_OPAQUE }; //하얀샌
 SDL_Color black = { 0, 0, 0, SDL_ALPHA_OPAQUE };
 SDL_Surface* Point_surface = NULL;
+SDL_Surface* CoinFont_Surface = NULL;
 
 //상점 이미지들
 SDL_Texture* Skin1 = NULL; //스킨1
@@ -203,6 +204,10 @@ bool loadMedia() {
     TutorialWindow = IMG_LoadTexture(Renderer, "Image/Game/tutorial.png");
     Icon = IMG_Load("Image/Game/Fish_icon.bmp");
     Coin = IMG_LoadTexture(Renderer, "Image/Game/Coin.png");
+    Skin1 = IMG_LoadTexture(Renderer, "Image/Game/FishDefault.png");
+    Skin2 = IMG_LoadTexture(Renderer, "Image/Game/GoldFish.png");
+    Skin3 = IMG_LoadTexture(Renderer, "Image/Game/fish_female.png");
+    Skin4 = IMG_LoadTexture(Renderer, "Image/Game/While.png");
 
     if (fish == NULL || startimg == NULL || fishgame == NULL || background == NULL ||
         fishselete == NULL || SetWindow == NULL || CheckConsole == NULL
@@ -310,7 +315,7 @@ int main(int argc, char* argv[]) {
     bool SoundOn = false;
     bool ChangeOn = false;
     bool PauseBackgroundOnce = false;
-    int AvatarState = 0;
+    int AvatarState = 2;
     int y1 = 250;
     int x1 = 800;
     int x2 = 800;
@@ -358,6 +363,7 @@ int main(int argc, char* argv[]) {
 
     // 포인트 출력 폰트 위치
     SDL_Rect FontPos = { 30, 10, 0, 0 };
+    SDL_Rect CoinFontPos = { 30, 50, 0, 0 };
 
     int fish_idx = 0;
     int fish_jump_idx = 0;
@@ -389,8 +395,10 @@ int main(int argc, char* argv[]) {
     bool SpeedUp = false;
     bool Avatar = false;
     bool CoinPassed = false;
+    bool CoinAte = false;
 
     char PointText[20];
+    char CoinText[20];
     int CoinRange = 0;
 
     window_surface = SDL_GetWindowSurface(window);
@@ -405,16 +413,6 @@ int main(int argc, char* argv[]) {
     background_surface = SDL_LoadBMP("Image/Player/background.bmp");
     if (background_surface == NULL) {
         printf("Failed to load background image! SDL Error: %s\n", SDL_GetError());
-        SDL_DestroyWindow(window);
-        SDL_Quit();
-        return 0;
-    }
-
-    // 플레이어 이미지 로드
-    player_surface = SDL_LoadBMP("Image/Game/fish_Padak-Sheet.bmp");
-    if (player_surface == NULL) {
-        printf("Failed to load player image! SDL Error: %s\n", SDL_GetError());
-        SDL_FreeSurface(background_surface);
         SDL_DestroyWindow(window);
         SDL_Quit();
         return 0;
@@ -448,8 +446,6 @@ int main(int argc, char* argv[]) {
         return 0;
     }
 
-    //플레이어 이미지 배경 투명하게 하기
-    SDL_SetColorKey(player_surface, SDL_TRUE, SDL_MapRGB(player_surface->format, 255, 0, 255));
     //장애물 이미지 배경 투명하게 하기
     SDL_SetColorKey(Thorn, SDL_TRUE, SDL_MapRGB(Thorn->format, 255, 0, 255));
 
@@ -544,6 +540,31 @@ int main(int argc, char* argv[]) {
                 }
             }
         }
+        // 플레이어 이미지 로드
+        switch (AvatarState)
+        {
+        case 0:
+            player_surface = SDL_LoadBMP("Image/Game/fish_Padak-Sheet.bmp");
+            break;
+        case 1:
+            player_surface = SDL_LoadBMP("Image/Game/fish_female-Sheet.bmp");
+            break;
+        case 2:
+            player_surface = SDL_LoadBMP("Image/Game/Gold Fish-Sheet.bmp");
+            break;
+        case 3:
+            player_surface = SDL_LoadBMP("Image/Game/While-Sheet.bmp");
+            break;
+        }
+        //플레이어 이미지 배경 투명하게 하기
+        SDL_SetColorKey(player_surface, SDL_TRUE, SDL_MapRGB(player_surface->format, 255, 0, 255));
+        if (player_surface == NULL) {
+            printf("Failed to load player image! SDL Error: %s\n", SDL_GetError());
+            SDL_FreeSurface(background_surface);
+            SDL_DestroyWindow(window);
+            SDL_Quit();
+            return 0;
+        }
         // 첫화면 로직
         if (isDestroyed == false) {
             intro(Renderer, startimg);
@@ -587,6 +608,7 @@ int main(int argc, char* argv[]) {
         if (isDestroyed == true && gameStart == false && DeathMenu == false && Avatar == true) {
             SDL_RenderClear(Renderer);
             SDL_RenderCopy(Renderer, background, NULL, NULL);
+            stretchTexture(Renderer, 300, 200, 100, 100, Skin1);
             SDL_RenderPresent(Renderer);
         }
         // 설정창 로직
@@ -647,7 +669,7 @@ int main(int argc, char* argv[]) {
                 Mix_Volume(-1, SoundSetting);
                 Mix_PlayMusic(gameMusic, -1);
                 ThornPassed = true;
-                CoinPos.x = 800;
+                CoinPassed = true;
                 Point = -1;
                 SpritePos.y = 250;
                 ClearRenderer = false;
@@ -664,11 +686,20 @@ int main(int argc, char* argv[]) {
             }
             //코인을 먹었거나 지나갔을 때 위치 초기화 및 코인 추가
             if (CoinPassed == true) {
+                CoinAte = false;
                 CoinRange = rand() % (800 - 500 + 1) + 500;
                 x2 = x2 + CoinRange;
                 CoinYRange = rand() % (300 - 200 + 1) + 200;
                 CoinPos.y = CoinYRange;
                 CoinPassed = false;
+            }
+            if (CoinAte == true) {
+                CoinNum++;
+                CoinRange = rand() % (800 - 500 + 1) + 500;
+                x2 = x2 + CoinRange;
+                CoinYRange = rand() % (300 - 200 + 1) + 200;
+                CoinPos.y = CoinYRange;
+                CoinAte = false;
             }
             Distance = calculateDistance(SpritePos, ThornPos);
             CoinDistance = calculateDistance(SpritePos, CoinPos);
@@ -676,11 +707,10 @@ int main(int argc, char* argv[]) {
                 printf("죽었습니다! ");
                 gameover = true;
             }
-            if (CoinDistance < 50) {
-                ++CoinNum;
+            if (CoinDistance < 70) {
                 Mix_Volume(-1, SoundSetting);
                 Mix_PlayChannel(-1, CoinSound, 0);
-                CoinPassed = true;
+                CoinAte = true;
             }
             if (Point % 10 == 0 && Point != 0 && SpeedUp == false) {
                 MAX_SPEED += 3;
@@ -690,7 +720,9 @@ int main(int argc, char* argv[]) {
                 SpeedUp = true;
             }
             snprintf(PointText, sizeof(PointText), "%d", Point);
+            snprintf(CoinText, sizeof(CoinText), "%d", CoinNum);
             Point_surface = TTF_RenderText_Blended(PointFont, PointText, black);
+            CoinFont_Surface = TTF_RenderText_Blended(PointFont, CoinText, black);
             Coin_idx++;
             Obj_idx++;
             fish_idx++;
@@ -778,6 +810,7 @@ int main(int argc, char* argv[]) {
             SDL_BlitSurface(player_surface, &rcSprite, window_surface, &SpritePos);
             SDL_BlitSurface(Thorn, &objSprite, window_surface, &ThornPos);
             SDL_BlitSurface(Point_surface, NULL, window_surface, &FontPos);
+            SDL_BlitSurface(CoinFont_Surface, NULL, window_surface, &CoinFontPos);
             SDL_BlitSurface(InGameCoin, &CoinSprite, window_surface, &CoinPos);
             //화면 업데이트
             SDL_UpdateWindowSurface(window);
@@ -859,7 +892,7 @@ int main(int argc, char* argv[]) {
             SDL_FreeSurface(GameOver);
             SDL_RenderCopy(Renderer, gameoverScreen, NULL, NULL);
             SDL_RenderPresent(Renderer);
-            fp = fopen("data.txt", "r");
+            fp = fopen("data.txt", "r+");
             if (fp == NULL) {
                 printf("파일열기 실패\n");
             }

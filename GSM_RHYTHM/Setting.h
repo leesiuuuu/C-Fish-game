@@ -31,6 +31,7 @@ int SoundSettingWindow() {
     printf("추후 추가 예정\n");
     scanf_s("%d", &num);
     if (num == 1225) {
+        Admin = 0;
         system("cls");
         FILE* fip = NULL;
         fip = fopen("data.txt", "w+");
@@ -39,6 +40,7 @@ int SoundSettingWindow() {
         }
         while (true)
         {
+            system("cls");
             printf("관리자 모드\n\n");
             printf("설정할 기능을 선택하세요\n");
             printf("1. 최고 점수 초기화\n");
@@ -50,11 +52,16 @@ int SoundSettingWindow() {
                 system("cls");
                 return 0;
             }
-            if (Admin == 2) {
+            else if (Admin == 2) {
                 fprintf(fip, "%d\n%d", RecordNew, 0);
                 fclose(fip);
                 system("cls");
                 return 0;
+            }
+            else {
+                printf("잘못된 입력입니다!\n");
+                Sleep(500);
+                continue;
             }
         }
     }
