@@ -1,3 +1,4 @@
+#define _CRT_SECURE_NO_WARNINGS
 #include <stdio.h>
 #include <SDL.h>
 #include <SDL_image.h>
@@ -21,19 +22,27 @@ TTF_Font* countFont = NULL;
 TTF_Font* PointFont = NULL;
 TTF_Font* YourRateis = NULL; //직접적 랭크를 보여주는 폰트
 TTF_Font* YRIN = NULL; //너의 랭크는... 을 출력할때 쓰는 폰트
+TTF_Font* Record = NULL; //최고 점수 출력 폰트
+
+TTF_Font* CoinCountFont = NULL; //코인의 값을 출력하는 폰트
 
 //이미지
 SDL_Texture* fish = NULL;
 SDL_Texture* startimg = NULL;
 SDL_Texture* background = NULL;
 SDL_Texture* fishgame = NULL;
-SDL_Texture* start = NULL;
-SDL_Texture* quit1 = NULL;
-SDL_Texture* setting = NULL;
+SDL_Texture* UI = NULL;
 SDL_Texture* fishselete = NULL;
 SDL_Texture* CheckConsole = NULL;
 SDL_Texture* SetWindow = NULL;
 SDL_Texture* TutorialWindow = NULL;
+
+//코인
+SDL_Texture* Coin = NULL;
+SDL_Surface* InGameCoin = NULL;
+
+//코인 값, 최고 점수 저장 txt파일
+FILE* fp;
 
 //소리
 Mix_Music* music = NULL;
@@ -43,6 +52,7 @@ Mix_Chunk* JumpSound = NULL;
 Mix_Chunk* seleteSound = NULL;
 Mix_Chunk* DeathSound = NULL;
 Mix_Chunk* ClearSound = NULL;
+Mix_Chunk* CoinSound = NULL;
 
 // 사운드 설정
 int SoundSetting = 100;
@@ -65,6 +75,19 @@ SDL_Color color = { 255, 255, 255, SDL_ALPHA_OPAQUE }; //하얀샌
 SDL_Color black = { 0, 0, 0, SDL_ALPHA_OPAQUE };
 SDL_Surface* Point_surface = NULL;
 
+//상점 이미지들
+SDL_Texture* Skin1 = NULL; //스킨1
+SDL_Texture* Skin2 = NULL; //스킨2
+SDL_Texture* Skin3 = NULL; //스킨3
+SDL_Texture* Skin4 = NULL; //스킨4
+
+SDL_Texture* BuyButton1 = NULL;
+SDL_Texture* BuyButton2 = NULL;
+SDL_Texture* BuyButton3 = NULL;
+
+SDL_Texture* DefaultButton = NULL;
+SDL_Texture* Slot = NULL;
+
 // 게임 오버 서페이스
 SDL_Surface* GameOver = NULL;
 
@@ -80,6 +103,9 @@ SDL_Surface* YRI = NULL; //너의 랭크는... 을 출력하는 서페이스
 SDL_Color Red = { 255, 0, 0, SDL_ALPHA_OPAQUE };
 SDL_Color Blue = { 0, 54, 255, SDL_ALPHA_OPAQUE };
 SDL_Color Pink = { 47, 190, 255, SDL_ALPHA_OPAQUE };
+
+int CoinNum = 0;
+int NewRecord = 0;
 
 bool init() {
     if (SDL_Init(SDL_INIT_VIDEO) < 0) {
@@ -148,6 +174,18 @@ bool init() {
         return false;
     }
 
+    CoinCountFont = TTF_OpenFont("Font/DungGeunMo.otf", 30);
+    if (CoinCountFont == NULL) {
+        printf("폰트를 열 수 없습니다!\n");
+        return false;
+    }
+
+    Record = TTF_OpenFont("Font/DungGeunMo.otf", 30);
+    if (Record == NULL) {
+        printf("폰트를 열 수 없습니다!\n");
+        return false;
+    }
+
     return true;
 }
 
@@ -156,9 +194,7 @@ bool loadMedia() {
     startimg = IMG_LoadTexture(Renderer, "Image/Game/startimg.png");
     fishgame = IMG_LoadTexture(Renderer, "Image/Game/Fish game.png");
     background = IMG_LoadTexture(Renderer, "Image/Game/background.png");
-    start = IMG_LoadTexture(Renderer, "Image/Game/start.png");
-    quit1 = IMG_LoadTexture(Renderer, "Image/Game/quit.png");
-    setting = IMG_LoadTexture(Renderer, "Image/Game/setting.png");
+    UI = IMG_LoadTexture(Renderer, "Image/Game/UI.png");
     fishselete = IMG_LoadTexture(Renderer, "Image/Game/fishopen.png");
     music = Mix_LoadMUS("Songs/mainSong1.wav");
     gameMusic = Mix_LoadMUS("Songs/gameSong.wav");
@@ -166,10 +202,11 @@ bool loadMedia() {
     CheckConsole = IMG_LoadTexture(Renderer, "Image/Game/CheckConsole.png");
     TutorialWindow = IMG_LoadTexture(Renderer, "Image/Game/tutorial.png");
     Icon = IMG_Load("Image/Game/Fish_icon.bmp");
+    Coin = IMG_LoadTexture(Renderer, "Image/Game/Coin.png");
 
     if (fish == NULL || startimg == NULL || fishgame == NULL || background == NULL ||
-        start == NULL || quit1 == NULL || fishselete == NULL || setting == NULL || SetWindow == NULL || CheckConsole == NULL
-        || TutorialWindow == NULL || Icon == NULL) {
+        fishselete == NULL || SetWindow == NULL || CheckConsole == NULL
+        || TutorialWindow == NULL || Icon == NULL || Coin == NULL || UI == NULL) {
         printf("이미지를 로드하는 데 실패했습니다!\n");
         return false;
     }
@@ -205,9 +242,13 @@ bool AudioSound() {
         printf("효과음 불러오지 못함!\n");
         return false;
     }
-    
     ClearSound = Mix_LoadWAV("Sound/Clear.wav");
     if (!ClearSound) {
+        printf("효과음 불러오지 못함!\n");
+        return false;
+    }
+    CoinSound = Mix_LoadWAV("Sound/Coin.wav");
+    if (!CoinSound) {
         printf("효과음 불러오지 못함!\n");
         return false;
     }
@@ -231,11 +272,9 @@ void close() {
     SDL_DestroyTexture(startimg);
     SDL_DestroyTexture(background);
     SDL_DestroyTexture(fishgame);
-    SDL_DestroyTexture(start);
-    SDL_DestroyTexture(quit1);
+    SDL_DestroyTexture(UI);
     SDL_DestroyTexture(fishselete);
     SDL_DestroyTexture(SetWindow);
-    SDL_DestroyTexture(setting);
     SDL_DestroyTexture(CheckConsole);
     TTF_Quit();
     IMG_Quit();
@@ -270,8 +309,11 @@ int main(int argc, char* argv[]) {
     bool ClearRenderer = false;
     bool SoundOn = false;
     bool ChangeOn = false;
+    bool PauseBackgroundOnce = false;
+    int AvatarState = 0;
     int y1 = 250;
     int x1 = 800;
+    int x2 = 800;
 
     int Pos1 = -150;
 
@@ -281,21 +323,38 @@ int main(int argc, char* argv[]) {
 
     SDL_Event event;
     int quit = 0;
+    int Point = -1;
 
     SDL_Texture* font_Texture = SDL_CreateTextureFromSurface(Renderer, font_surface);
-    
+
+    //txt 파일 열기
+    //fp = fopen("data.txt", "w+");
+    //if (fp == NULL) {
+    //    printf("파일열기 실패\n");
+    //}
+    //fprintf(fp, "%d\n%d", (Point < 0) ? 0 : Point, (!CoinNum) ? 0 : CoinNum);
+    //fclose(fp);
     //스프라이트 애니메이션 프레임 위치
     SDL_Rect rcSprite = { 0, 0, 100, 100 };
-    //스프라이트 위치
     SDL_Rect SpritePos = { 150, 250, 100, 100 };
+    //스프라이트 위치
     // 장애물 스프라이트 애니메이션 프레임 위치
     SDL_Rect objSprite = { 0, 0, 100, 100 };
     //장애물 위치
     SDL_Rect ThornPos = { 800, 250, 100, 100 };
 
+    //코인 스프라이트 애니메이션 프레임 위치
+    SDL_Rect CoinSprite = {0, 0, 50, 80};
+
+    //코인 위치
+    SDL_Rect CoinPos = { 800, 200, 50, 80 };
+
     //배경 스프라이트 애니메이션 프레임 위치
     SDL_Rect bgSprite = { 0, 0, 1024, 512 };
     SDL_Rect bgPos = { -550, -150, 1024, 512 };
+
+    //최고 점수 출력 위치
+    SDL_Rect RecordPos = { 300, 10, 0, 0 };
 
     // 포인트 출력 폰트 위치
     SDL_Rect FontPos = { 30, 10, 0, 0 };
@@ -304,16 +363,19 @@ int main(int argc, char* argv[]) {
     int fish_jump_idx = 0;
     int fish_state = 0;
 
+    int Coin_idx = 0;
+
     int MAX_SPEED = 35;
     int MIN_SPEED = 15;
 
     int Obj_idx = 0;
     int ObjSpeed = 0;
 
+    int CoinDistance;
+
     int Bgidx = 0;
 
     int Distance;
-    int Point = -1;
 
     bool isJumping = false;
     int jumpOffset = 0;
@@ -321,11 +383,15 @@ int main(int argc, char* argv[]) {
     int jumpspeed = 20;
     int gravity = 1;
     int maxJumpHeight = 50;
+    int CoinYRange;
     bool isFalling = false;
     bool ThornPassed = true;
     bool SpeedUp = false;
+    bool Avatar = false;
+    bool CoinPassed = false;
 
     char PointText[20];
+    int CoinRange = 0;
 
     window_surface = SDL_GetWindowSurface(window);
     if (window_surface == NULL) {
@@ -373,6 +439,15 @@ int main(int argc, char* argv[]) {
         return 0;
     }
 
+    InGameCoin = SDL_LoadBMP("Image/Game/Coin-Sheet.bmp");
+    if (InGameCoin == NULL) {
+        printf("Failed to load Thorn image! SDL Error: %s\n", SDL_GetError());
+        SDL_FreeSurface(background_surface);
+        SDL_DestroyWindow(window);
+        SDL_Quit();
+        return 0;
+    }
+
     //플레이어 이미지 배경 투명하게 하기
     SDL_SetColorKey(player_surface, SDL_TRUE, SDL_MapRGB(player_surface->format, 255, 0, 255));
     //장애물 이미지 배경 투명하게 하기
@@ -380,6 +455,7 @@ int main(int argc, char* argv[]) {
 
     loadMedia();
     SDL_SetColorKey(Icon, SDL_TRUE, SDL_MapRGB(Icon->format, 255, 0, 255));
+    SDL_SetColorKey(InGameCoin, SDL_TRUE, SDL_MapRGB(InGameCoin->format, 255, 0, 255));
     SDL_SetWindowIcon(window, Icon);
     SDL_FreeSurface(Icon);
     while (!quit) {
@@ -396,7 +472,7 @@ int main(int argc, char* argv[]) {
                         Mix_PlayChannel(-1, seleteSound, 0);
                     }
                     ++seleteState;
-                    if (seleteState > 2) {
+                    if (seleteState > 3) {
                         seleteState = 0;
                     }
                     break;
@@ -407,7 +483,7 @@ int main(int argc, char* argv[]) {
                     }
                     --seleteState;
                     if (seleteState < 0) {
-                        seleteState = 2;
+                        seleteState = 3;
                     }
                     break;
                 case SDLK_SPACE:
@@ -418,14 +494,19 @@ int main(int argc, char* argv[]) {
                             ClearRenderer = true;
                             Tutorial = true;
                         }
-                        if (seleteState == 1) {
+                        if (seleteState == 2) {
                             printf("설정창\n");
                             SoundSetComplete = false;
                             SettingWindow = true;
                         }
-                        if (seleteState == 2) {
+                        if (seleteState == 3) {
                             printf("게임 종료!\n");
                             close();
+                        }
+                        if (seleteState == 1) {
+                            printf("아바타 상점!\n");
+                            Avatar = true;
+                            
                         }
                     }
                     break;
@@ -463,14 +544,13 @@ int main(int argc, char* argv[]) {
                 }
             }
         }
-        SDL_RenderCopy(Renderer, background, NULL, NULL);
         // 첫화면 로직
         if (isDestroyed == false) {
             intro(Renderer, startimg);
             isDestroyed = true;
         }
         // 메인 화면 로직
-        if (isDestroyed == true && gameStart == false && DeathMenu == false && SettingWindow == false) {
+        if (isDestroyed == true && gameStart == false && DeathMenu == false && SettingWindow == false && Avatar == false) {
             SDL_RenderClear(Renderer);
             //사운드 조절 적용
             if (MusicStart == false && SoundSetComplete == false) {
@@ -485,21 +565,28 @@ int main(int argc, char* argv[]) {
             }
             SDL_RenderCopy(Renderer, background, NULL, NULL);
             SDL_RenderCopy(Renderer, fishgame, NULL, NULL);
-            SDL_RenderCopy(Renderer, start, NULL, NULL);
-            SDL_RenderCopy(Renderer, setting, NULL, NULL);
-            SDL_RenderCopy(Renderer, quit1, NULL, NULL);
+            SDL_RenderCopy(Renderer, UI, NULL, NULL);
             switch (seleteState)
             {
             case 0:
                 stretchTexture(Renderer, 170, 215, 80, 80, fish);
                 break;
             case 1:
-                stretchTexture(Renderer, 130, 275, 80, 80, fish);
+                stretchTexture(Renderer, 150, 265, 80, 80, fish);
                 break;
             case 2:
-                stretchTexture(Renderer, 180, 325, 80, 80, fish);
+                stretchTexture(Renderer, 130, 325, 80, 80, fish);
+                break;
+            case 3:
+                stretchTexture(Renderer, 180, 375, 80, 80, fish);
                 break;
             }
+            SDL_RenderPresent(Renderer);
+        }
+        //아바타 상점 로직
+        if (isDestroyed == true && gameStart == false && DeathMenu == false && Avatar == true) {
+            SDL_RenderClear(Renderer);
+            SDL_RenderCopy(Renderer, background, NULL, NULL);
             SDL_RenderPresent(Renderer);
         }
         // 설정창 로직
@@ -551,6 +638,7 @@ int main(int argc, char* argv[]) {
         // 게임 작동 로직
         // 게임 시작 시 랜더러는 사용하지 않음 -> Texture가 아닌 Surface로 사용됨
         if (gameStart == true && DeathMenu == false && SettingWindow == false && Tutorial == false && gameover == false) {
+            //처음 시작했을 때 위치 초기화
             if (ClearRenderer == true) {
                 MAX_SPEED = 35;
                 MIN_SPEED = 15;
@@ -559,10 +647,12 @@ int main(int argc, char* argv[]) {
                 Mix_Volume(-1, SoundSetting);
                 Mix_PlayMusic(gameMusic, -1);
                 ThornPassed = true;
+                CoinPos.x = 800;
                 Point = -1;
                 SpritePos.y = 250;
                 ClearRenderer = false;
             }
+            //장애물이 지나갔을 때 위치 초기화 및 점수 추가
             if (ThornPassed == true) {
                 ObjSpeed = rand() % (MAX_SPEED - MIN_SPEED + 1) + MIN_SPEED;
                 ++Point;
@@ -572,10 +662,25 @@ int main(int argc, char* argv[]) {
                 SpeedUp = false;
                 ThornPassed = false;
             }
+            //코인을 먹었거나 지나갔을 때 위치 초기화 및 코인 추가
+            if (CoinPassed == true) {
+                CoinRange = rand() % (800 - 500 + 1) + 500;
+                x2 = x2 + CoinRange;
+                CoinYRange = rand() % (300 - 200 + 1) + 200;
+                CoinPos.y = CoinYRange;
+                CoinPassed = false;
+            }
             Distance = calculateDistance(SpritePos, ThornPos);
+            CoinDistance = calculateDistance(SpritePos, CoinPos);
             if (Distance < 70) {
-                printf("죽었습니다!\n");
+                printf("죽었습니다! ");
                 gameover = true;
+            }
+            if (CoinDistance < 50) {
+                ++CoinNum;
+                Mix_Volume(-1, SoundSetting);
+                Mix_PlayChannel(-1, CoinSound, 0);
+                CoinPassed = true;
             }
             if (Point % 10 == 0 && Point != 0 && SpeedUp == false) {
                 MAX_SPEED += 3;
@@ -586,6 +691,7 @@ int main(int argc, char* argv[]) {
             }
             snprintf(PointText, sizeof(PointText), "%d", Point);
             Point_surface = TTF_RenderText_Blended(PointFont, PointText, black);
+            Coin_idx++;
             Obj_idx++;
             fish_idx++;
             Bgidx++;
@@ -597,13 +703,15 @@ int main(int argc, char* argv[]) {
             else {
                 objSprite.y = 100 * ThornOrderRandom;
             }
-
             rcSprite.x = 100 * fish_idx;
             rcSprite.y = 100 * fish_state;
+            CoinSprite.x = 50 * Coin_idx;
             if (fish_idx >= 7)
                 fish_idx = 0;
             if (Obj_idx >= 7)
                 Obj_idx = 0;
+            if (Coin_idx >= 7)
+                Coin_idx = 0;
             if (Bgidx >= 9) {
                 Bgidx = 0;
             }
@@ -654,16 +762,23 @@ int main(int argc, char* argv[]) {
             }
             SpritePos.y = 250 + jumpOffset;
             ThornPos.x = x1;
+            CoinPos.x = x2;
             x1 -= ObjSpeed;
+            x2 -= 20;
             if (x1 <= -100) {
                 x1 = 800;
                 ThornPassed = true;
+            }
+            if (x2 <= -100) {
+                x2 = 800;
+                CoinPassed = true;
             }
             // 장애물이 화면 왼쪽 끝을 벗어나면 다시 화면 오른쪽 끝으로 이동
             SDL_BlitSurface(BgSprite, &bgSprite, window_surface, &bgPos);
             SDL_BlitSurface(player_surface, &rcSprite, window_surface, &SpritePos);
             SDL_BlitSurface(Thorn, &objSprite, window_surface, &ThornPos);
             SDL_BlitSurface(Point_surface, NULL, window_surface, &FontPos);
+            SDL_BlitSurface(InGameCoin, &CoinSprite, window_surface, &CoinPos);
             //화면 업데이트
             SDL_UpdateWindowSurface(window);
             SDL_Delay(100);
@@ -729,6 +844,9 @@ int main(int argc, char* argv[]) {
             }
             //점수 문자열 저장
             char PointValue[20];
+            char RecrodValue[20];
+            SDL_Surface* RecordValueSurface = NULL;
+            SDL_Texture* RecordValueTexture = NULL;
             SDL_Surface* GameoverPoint = NULL;
             SDL_Texture* GameoverPointTexture = NULL;
             SDL_Texture* YourRateisTexture = NULL;
@@ -741,6 +859,22 @@ int main(int argc, char* argv[]) {
             SDL_FreeSurface(GameOver);
             SDL_RenderCopy(Renderer, gameoverScreen, NULL, NULL);
             SDL_RenderPresent(Renderer);
+            fp = fopen("data.txt", "r");
+            if (fp == NULL) {
+                printf("파일열기 실패\n");
+            }
+            else {
+                fscanf(fp, "%d", &NewRecord);
+                fclose(fp);
+            }
+            fp = fopen("data.txt", "w+");
+            if (fp == NULL) {
+                printf("파일 열기 실패!\n");
+            }
+            else {
+                fprintf(fp, "%d\n%d", (Point <= 0) ? 0 : (Point >= NewRecord) ? Point : NewRecord, (!CoinNum) ? 0 : CoinNum);
+                fclose(fp);
+            }
             //포인트 값을 저장
             snprintf(PointValue, sizeof(PointValue), "Point : %d", Point);
             GameoverPoint = TTF_RenderText_Blended(countFont, PointValue, black);
@@ -749,21 +883,31 @@ int main(int argc, char* argv[]) {
             YRI = TTF_RenderText_Blended(YRIN, "Your Rate is...", black);
             YourRateisNTexture = SDL_CreateTextureFromSurface(Renderer, YRI);
             YourRateisTexture = SDL_CreateTextureFromSurface(Renderer, Rate);
+            //최고 점수 저장
+            snprintf(RecrodValue, sizeof(RecrodValue), "Record : %d", NewRecord < Point ? Point : NewRecord);
+            RecordValueSurface = TTF_RenderText_Blended(Record, RecrodValue, black);
+            RecordValueTexture = SDL_CreateTextureFromSurface(Renderer, RecordValueSurface);
+            
             //텍스쳐 출력
             SDL_QueryTexture(GameoverPointTexture, NULL, NULL, &p.w, &p.h);
             SDL_QueryTexture(YourRateisNTexture, NULL, NULL, &YRIPos.w, &YRIPos.h);
             SDL_QueryTexture(YourRateisTexture, NULL, NULL, &RatePos.w, &RatePos.h);
+            SDL_QueryTexture(RecordValueTexture, NULL, NULL, &RecordPos.w, &RecordPos.h);
             SDL_RenderCopy(Renderer, GameoverPointTexture, NULL, &p);
             SDL_RenderCopy(Renderer, YourRateisTexture, NULL, &RatePos);
             SDL_RenderCopy(Renderer, YourRateisNTexture, NULL, &YRIPos);
+            SDL_RenderCopy(Renderer, RecordValueTexture, NULL, &RecordPos);
             SDL_FreeSurface(GameoverPoint);
             SDL_FreeSurface(YRI);
             SDL_FreeSurface(Rate);
+            SDL_FreeSurface(RecordValueSurface);
             SDL_RenderPresent(Renderer);
             SDL_DestroyTexture(GameoverPointTexture);
             SDL_DestroyTexture(YourRateisTexture);
             SDL_DestroyTexture(YourRateisNTexture);
             SDL_DestroyTexture(gameoverScreen);
+            SDL_DestroyTexture(RecordValueTexture);
+            printf("  점수 : %d\n", Point);
             SDL_Delay(4000);
             gameover = false;
             DeathMenu = false;
@@ -772,6 +916,7 @@ int main(int argc, char* argv[]) {
             ClearRenderer = true;
         }
     }
+    
     close();
     return 0;
 }

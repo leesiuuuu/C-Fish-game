@@ -5,6 +5,8 @@
 
 extern int SoundSetting;
 extern bool isTutorialoff;
+extern int CoinNum;
+extern int NewRecord;
 int TutorialSetting();
 
 void Setting(SDL_Renderer* rend, SDL_Texture* BG, SDL_Texture* Window, SDL_Texture* Check) {
@@ -18,13 +20,44 @@ void Setting(SDL_Renderer* rend, SDL_Texture* BG, SDL_Texture* Window, SDL_Textu
 int SoundSettingWindow() {
     int num;
     int Sound;
+    int Admin;
     Sound = SoundSetting;
+    int CoinAnswer = CoinNum;
+    int RecordNew = NewRecord;
     printf("\n설정하고 싶은 것을 선택하세요.\n");
     printf("1. 사운드 설정\n");
     printf("2. 튜토리얼 설정\n\n");
     printf("취소하려면 0을 입력하세요.\n\n");
     printf("추후 추가 예정\n");
     scanf_s("%d", &num);
+    if (num == 1225) {
+        system("cls");
+        FILE* fip = NULL;
+        fip = fopen("data.txt", "w+");
+        if (fip == NULL) {
+            printf("파일열기 실패\n");
+        }
+        while (true)
+        {
+            printf("관리자 모드\n\n");
+            printf("설정할 기능을 선택하세요\n");
+            printf("1. 최고 점수 초기화\n");
+            printf("2. 코인 초기화\n");
+            scanf_s("%d", &Admin);
+            if (Admin == 1) {
+                fprintf(fip, "%d\n%d", 0, CoinAnswer);
+                fclose(fip);
+                system("cls");
+                return 0;
+            }
+            if (Admin == 2) {
+                fprintf(fip, "%d\n%d", RecordNew, 0);
+                fclose(fip);
+                system("cls");
+                return 0;
+            }
+        }
+    }
     if (num == 0) {
         system("cls");
         return 0;
