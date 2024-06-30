@@ -82,9 +82,10 @@ SDL_Texture* Skin2 = NULL; //스킨2
 SDL_Texture* Skin3 = NULL; //스킨3
 SDL_Texture* Skin4 = NULL; //스킨4
 
-SDL_Texture* BuyButton1 = NULL;
-SDL_Texture* BuyButton2 = NULL;
-SDL_Texture* BuyButton3 = NULL;
+SDL_Texture* Slot1 = NULL;
+SDL_Texture* Slot2 = NULL;
+SDL_Texture* Slot3 = NULL;
+SDL_Texture* Slot4 = NULL;
 
 SDL_Texture* DefaultButton = NULL;
 SDL_Texture* Slot = NULL;
@@ -208,6 +209,10 @@ bool loadMedia() {
     Skin2 = IMG_LoadTexture(Renderer, "Image/Game/GoldFish.png");
     Skin3 = IMG_LoadTexture(Renderer, "Image/Game/fish_female.png");
     Skin4 = IMG_LoadTexture(Renderer, "Image/Game/While.png");
+    Slot4 = IMG_LoadTexture(Renderer, "Image/Game/DefaultEquiped.png");
+    Slot3 = IMG_LoadTexture(Renderer, "Image/Game/WhileFish.png");
+    Slot2 = IMG_LoadTexture(Renderer, "Image/Game/FemaleFish.png");
+    Slot1 = IMG_LoadTexture(Renderer, "Image/Game/GoldFishBuy.png");
 
     if (fish == NULL || startimg == NULL || fishgame == NULL || background == NULL ||
         fishselete == NULL || SetWindow == NULL || CheckConsole == NULL
@@ -315,7 +320,7 @@ int main(int argc, char* argv[]) {
     bool SoundOn = false;
     bool ChangeOn = false;
     bool PauseBackgroundOnce = false;
-    int AvatarState = 2;
+    int AvatarState = 0;
     int y1 = 250;
     int x1 = 800;
     int x2 = 800;
@@ -349,10 +354,10 @@ int main(int argc, char* argv[]) {
     SDL_Rect ThornPos = { 800, 250, 100, 100 };
 
     //코인 스프라이트 애니메이션 프레임 위치
-    SDL_Rect CoinSprite = {0, 0, 50, 80};
+    SDL_Rect CoinSprite = {0, 0, 50, 50};
 
     //코인 위치
-    SDL_Rect CoinPos = { 800, 200, 50, 80 };
+    SDL_Rect CoinPos = { 800, 200, 50, 50 };
 
     //배경 스프라이트 애니메이션 프레임 위치
     SDL_Rect bgSprite = { 0, 0, 1024, 512 };
@@ -369,6 +374,8 @@ int main(int argc, char* argv[]) {
     int fish_jump_idx = 0;
     int fish_state = 0;
 
+    int AvatarSelete = 0;
+
     int Coin_idx = 0;
 
     int MAX_SPEED = 35;
@@ -382,6 +389,7 @@ int main(int argc, char* argv[]) {
     int Bgidx = 0;
 
     int Distance;
+    int Dummy;
 
     bool isJumping = false;
     int jumpOffset = 0;
@@ -396,6 +404,7 @@ int main(int argc, char* argv[]) {
     bool Avatar = false;
     bool CoinPassed = false;
     bool CoinAte = false;
+    bool AvatarStart = false;
 
     char PointText[20];
     char CoinText[20];
@@ -482,8 +491,26 @@ int main(int argc, char* argv[]) {
                         seleteState = 3;
                     }
                     break;
+                case SDLK_RIGHT:
+                    if (Avatar == true) {
+                        Mix_Volume(-1, SoundSetting);
+                        Mix_PlayChannel(-1, seleteSound, 0);
+                        AvatarSelete++;
+                        if (AvatarSelete > 3)
+                            AvatarSelete = 0;
+                    }
+                    break;
+                case SDLK_LEFT:
+                    if (Avatar == true) {
+                        Mix_Volume(-1, SoundSetting);
+                        Mix_PlayChannel(-1, seleteSound, 0);
+                        AvatarSelete--;
+                        if (AvatarSelete < 0)
+                            AvatarSelete = 3;
+                    }
+                    break;
                 case SDLK_SPACE:
-                    if (gameStart == false) {
+                    if (gameStart == false && !Avatar) {
                         if (seleteState == 0) {
                             printf("게임 시작!\n");
                             gameStart = true;
@@ -502,7 +529,6 @@ int main(int argc, char* argv[]) {
                         if (seleteState == 1) {
                             printf("아바타 상점!\n");
                             Avatar = true;
-                            
                         }
                     }
                     break;
@@ -523,6 +549,35 @@ int main(int argc, char* argv[]) {
                     }
                     if (Tutorial == true) {
                         break;
+                    }
+                    if (Avatar == true) {
+                        switch (AvatarSelete)
+                        {
+                        case 0:
+                            if (CoinNum >= 10) {
+                                CoinNum -= 10;
+                                //아바타 사진 효과 넣기
+                            }
+                            else
+                                printf("코인이 부족합니다!\n");
+                            break;
+                        case 1:
+                            if (CoinNum >= 20) {
+                                CoinNum -= 20;
+                                //아바타 사진 효과 넣기
+                            }
+                            else
+                                printf("코인이 부족합니다!\n");
+                            break;
+                        case 2:
+                            if (CoinNum >= 40) {
+                                CoinNum -= 40;
+                                //아바타 사진 효과 넣기
+                            }
+                            else
+                                printf("코인이 부족합니다!\n");
+                            break;
+                        }
                     }
                     break;
                 }
@@ -606,10 +661,42 @@ int main(int argc, char* argv[]) {
         }
         //아바타 상점 로직
         if (isDestroyed == true && gameStart == false && DeathMenu == false && Avatar == true) {
+            fp = fopen("data.txt", "r+");
+            fscanf(fp, "%*[^\n]\n");
+            fscanf(fp, "%d", &CoinNum);
+            SDL_Texture* CoinTexture = SDL_CreateTextureFromSurface(Renderer, CoinFont_Surface);
             SDL_RenderClear(Renderer);
             SDL_RenderCopy(Renderer, background, NULL, NULL);
-            stretchTexture(Renderer, 300, 200, 100, 100, Skin1);
+            SDL_RenderCopy(Renderer, Slot4, NULL, NULL);
+            SDL_RenderCopy(Renderer, Slot3, NULL, NULL);
+            SDL_RenderCopy(Renderer, Slot2, NULL, NULL);
+            SDL_RenderCopy(Renderer, Slot1, NULL, NULL);
+            snprintf(CoinText, sizeof(CoinText), "%d", CoinNum);
+            CoinFont_Surface = TTF_RenderText_Blended(PointFont, CoinText, black);
+            stretchTexture(Renderer, 510, 150, 85, 85, Skin1);
+            stretchTexture(Renderer, 355, 150, 85, 85, Skin4);
+            stretchTexture(Renderer, 205, 150, 85, 85, Skin3);
+            stretchTexture(Renderer, 50, 150, 85, 85, Skin2);
+            SDL_QueryTexture(CoinTexture, NULL, NULL, &RecordPos.w, &RecordPos.h);
+            SDL_RenderCopy(Renderer, CoinTexture, NULL, &RecordPos);
+            switch (AvatarSelete)
+            {
+            case 0:
+                stretchTexture(Renderer, 50, 300, 80, 80, fish);
+                break;
+            case 1:
+                stretchTexture(Renderer, 205, 300, 80, 80, fish);
+                break;
+            case 2:
+                stretchTexture(Renderer, 355, 300, 80, 80, fish);
+                break;
+            case 3:
+                stretchTexture(Renderer, 510, 300, 80, 80, fish);
+                break;
+            }
+            fclose(fp);
             SDL_RenderPresent(Renderer);
+            AvatarStart = true;
         }
         // 설정창 로직
         if (gameStart == false && DeathMenu == false && SettingWindow == true) {
@@ -660,6 +747,12 @@ int main(int argc, char* argv[]) {
         // 게임 작동 로직
         // 게임 시작 시 랜더러는 사용하지 않음 -> Texture가 아닌 Surface로 사용됨
         if (gameStart == true && DeathMenu == false && SettingWindow == false && Tutorial == false && gameover == false) {
+            fp = fopen("data.txt", "r");
+            // 첫 번째 줄의 문자열을 무시
+            fscanf(fp, "%d", &Dummy);
+            fscanf(fp, "%*[^\n]\n");
+            fscanf(fp, "%d", &CoinNum);
+            fclose(fp);
             //처음 시작했을 때 위치 초기화
             if (ClearRenderer == true) {
                 MAX_SPEED = 35;
@@ -684,7 +777,7 @@ int main(int argc, char* argv[]) {
                 SpeedUp = false;
                 ThornPassed = false;
             }
-            //코인을 먹었거나 지나갔을 때 위치 초기화 및 코인 추가
+            //코인이 지나갔을 때 위치 초기화
             if (CoinPassed == true) {
                 CoinAte = false;
                 CoinRange = rand() % (800 - 500 + 1) + 500;
@@ -693,12 +786,14 @@ int main(int argc, char* argv[]) {
                 CoinPos.y = CoinYRange;
                 CoinPassed = false;
             }
+            //코인을 먹었을 때 위치 초기화 및 코인 추가
             if (CoinAte == true) {
-                CoinNum++;
-                CoinRange = rand() % (800 - 500 + 1) + 500;
-                x2 = x2 + CoinRange;
-                CoinYRange = rand() % (300 - 200 + 1) + 200;
-                CoinPos.y = CoinYRange;
+                ++CoinNum;
+                FILE *fp_write = fopen("data.txt", "w+");
+                fscanf(fp_write, "%d", &Dummy);
+                fscanf(fp_write, "%*[^\n]\n");
+                fprintf(fp_write, "%d\n%d", Dummy, CoinNum);
+                fclose(fp_write);
                 CoinAte = false;
             }
             Distance = calculateDistance(SpritePos, ThornPos);
@@ -710,6 +805,10 @@ int main(int argc, char* argv[]) {
             if (CoinDistance < 70) {
                 Mix_Volume(-1, SoundSetting);
                 Mix_PlayChannel(-1, CoinSound, 0);
+                CoinRange = rand() % (800 - 500 + 1) + 500;
+                x2 = x2 + CoinRange;
+                CoinYRange = rand() % (300 - 200 + 1) + 200;
+                CoinPos.y = CoinYRange;
                 CoinAte = true;
             }
             if (Point % 10 == 0 && Point != 0 && SpeedUp == false) {
@@ -892,7 +991,7 @@ int main(int argc, char* argv[]) {
             SDL_FreeSurface(GameOver);
             SDL_RenderCopy(Renderer, gameoverScreen, NULL, NULL);
             SDL_RenderPresent(Renderer);
-            fp = fopen("data.txt", "r+");
+            fp = fopen("data.txt", "r");
             if (fp == NULL) {
                 printf("파일열기 실패\n");
             }

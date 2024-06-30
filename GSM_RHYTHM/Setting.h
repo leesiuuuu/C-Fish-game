@@ -24,6 +24,8 @@ int SoundSettingWindow() {
     Sound = SoundSetting;
     int CoinAnswer = CoinNum;
     int RecordNew = NewRecord;
+    int buffer[256];
+    int Score, Coin;
     printf("\n설정하고 싶은 것을 선택하세요.\n");
     printf("1. 사운드 설정\n");
     printf("2. 튜토리얼 설정\n\n");
@@ -34,26 +36,52 @@ int SoundSettingWindow() {
         Admin = 0;
         system("cls");
         FILE* fip = NULL;
-        fip = fopen("data.txt", "w+");
+        fip = fopen("data.txt", "r");
         if (fip == NULL) {
             printf("파일열기 실패\n");
         }
-        while (true)
-        {
+        while (true) {
             system("cls");
             printf("관리자 모드\n\n");
             printf("설정할 기능을 선택하세요\n");
             printf("1. 최고 점수 초기화\n");
             printf("2. 코인 초기화\n");
             scanf_s("%d", &Admin);
+
+            // 파일 읽기
+            fip = fopen("data.txt", "r");
+            if (fip == NULL) {
+                perror("파일을 열 수 없습니다.");
+                return 1;
+            }
+
+            // 첫 번째 줄 읽기 (최고 점수)
+            fgets(buffer, sizeof(buffer), fip);
+            sscanf(buffer, "%d", &Score);
+
+            // 두 번째 줄 읽기 (코인)
+            fgets(buffer, sizeof(buffer), fip);
+            sscanf(buffer, "%d", &Coin);
+
+            fclose(fip);
+
+            // 파일 쓰기 모드로 다시 열기
+            fip = fopen("data.txt", "w");
+            if (fip == NULL) {
+                perror("파일을 열 수 없습니다.");
+                return 1;
+            }
+
             if (Admin == 1) {
-                fprintf(fip, "%d\n%d", 0, CoinAnswer);
+                // 최고 점수 초기화
+                fprintf(fip, "%d\n%d", 0, Coin);
                 fclose(fip);
                 system("cls");
                 return 0;
             }
             else if (Admin == 2) {
-                fprintf(fip, "%d\n%d", RecordNew, 0);
+                // 코인 초기화
+                fprintf(fip, "%d\n%d", Score, 0);
                 fclose(fip);
                 system("cls");
                 return 0;
