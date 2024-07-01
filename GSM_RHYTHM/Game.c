@@ -303,6 +303,9 @@ int main(int argc, char* argv[]) {
         return false;
     }      
 
+    bool buy[4] = { false, false, false, true };
+    bool equiped[4] = { false, false, false, true };
+
     bool startAudio = false;
     bool MusicStart = false;
     bool gameMusicstart = false;
@@ -524,7 +527,7 @@ int main(int argc, char* argv[]) {
                         }
                         if (seleteState == 3) {
                             printf("게임 종료!\n");
-                            close();
+                            quit = true;
                         }
                         if (seleteState == 1) {
                             printf("아바타 상점!\n");
@@ -554,32 +557,121 @@ int main(int argc, char* argv[]) {
                         switch (AvatarSelete)
                         {
                         case 0:
-                            if (CoinNum >= 10) {
-                                CoinNum -= 10;
-                                //아바타 사진 효과 넣기
+                            if (buy[0] == false) {
+                                if (CoinNum >= 10) {
+                                    buy[0] = true;
+                                    printf("구매됨!\n");
+                                    Slot1 = IMG_LoadTexture(Renderer, "Image/Game/GoldFishBought.png");
+                                    CoinNum -= 10;
+                                    printf("%d\n", CoinNum);
+                                }
+                                else
+                                    printf("코인 부족!\n");
                             }
-                            else
-                                printf("코인이 부족합니다!\n");
+                            else {
+                                if (equiped[0] == false) {
+                                    printf("장착됨\n");
+                                    equiped[0] = true;
+                                    AvatarState = 2;
+                                    Slot1 = IMG_LoadTexture(Renderer, "Image/Game/GoldFishEquiped.png");
+                                }
+                                else {
+                                    equiped[0] = false;
+                                    printf("장착 해제!\n");
+                                    Slot1 = IMG_LoadTexture(Renderer, "Image/Game/GoldFishBought.png");
+                                }
+                            }
                             break;
                         case 1:
-                            if (CoinNum >= 20) {
-                                CoinNum -= 20;
-                                //아바타 사진 효과 넣기
+                            if (buy[1] == false) {
+                                if (CoinNum >= 20) {
+                                    buy[1] = true;
+                                    printf("구매됨!\n");
+                                    Slot2 = IMG_LoadTexture(Renderer, "Image/Game/FemaleFishBought.png");
+                                    CoinNum -= 20;
+                                    printf("%d\n", CoinNum);
+                                }
+                                else
+                                    printf("코인 부족!\n");
                             }
-                            else
-                                printf("코인이 부족합니다!\n");
+                            else {
+                                if (equiped[1] == false) {
+                                    printf("장착됨!\n");
+                                    equiped[1] = true;
+                                    AvatarState = 1;
+                                    Slot2 = IMG_LoadTexture(Renderer, "Image/Game/FemaleFishEquiped.png");
+                                }
+                                else {
+                                    printf("장착 해제!\n");
+                                    equiped[1] = false;
+                                    Slot2 = IMG_LoadTexture(Renderer, "Image/Game/FemaleFishBought.png");
+                                }
+                            }
                             break;
                         case 2:
-                            if (CoinNum >= 40) {
-                                CoinNum -= 40;
-                                //아바타 사진 효과 넣기
+                            if (buy[2] == false) {
+                                if (CoinNum >= 40) {
+                                    Slot3 = IMG_LoadTexture(Renderer, "Image/Game/WhileFishBought.png");
+                                    buy[2] = true;
+                                    printf("구매됨!\n");
+                                    CoinNum -= 40;
+                                    printf("%d\n", CoinNum);
+                                }
+                                else
+                                    printf("코인 부족!\n");
                             }
-                            else
-                                printf("코인이 부족합니다!\n");
+                            else {
+                                if (equiped[2] == false) {
+                                    equiped[2] = true;
+                                    AvatarState = 3;
+                                    printf("장착됨!\n");
+                                    Slot3 = IMG_LoadTexture(Renderer, "Image/Game/WhileFishEquiped.png");
+                                }
+                                else {
+                                    equiped[2] = false;
+                                    printf("장착 해제!\n");
+                                    Slot3 = IMG_LoadTexture(Renderer, "Image/Game/WhileFishBought.png");
+                                }
+                            }
+                            break;
+                        case 3:
+                            if (buy[3] == false) {
+                                if (CoinNum >= 0) {
+                                    Slot4 = IMG_LoadTexture(Renderer, "Image/Game/DefaultEquiped.png");
+                                    printf("구매됨!\n");
+                                    buy[3] = true;
+                                    printf("%d\n", CoinNum);
+                                }
+                                else
+                                    printf("코인 부족!\n");
+                            }
+                            else {
+                                if (equiped[3] == false) {
+                                    printf("장착됨!\n");
+                                    equiped[3] = true;
+                                    AvatarState = 0;
+                                    Slot4 = IMG_LoadTexture(Renderer, "Image/Game/DefaultEquiped.png");
+                                }
+                                else {
+                                    printf("장착 해제!\n");
+                                    equiped[3] = false;
+                                    Slot4 = IMG_LoadTexture(Renderer, "Image/Game/Default.png");
+                                }
+                            }
                             break;
                         }
+                        FILE* cf = fopen("data.txt", "r");
+                        fscanf(cf, "%d", &Dummy);
+                        fscanf(cf, "%*[^\n]\n");
+                        fscanf(cf, "%d", &CoinNum);
+                        fclose(cf);
                     }
                     break;
+                case SDLK_ESCAPE:
+                    if (Avatar == true) {
+                        Avatar = false;
+                        break;
+                    }
                 }
             }
             if (event.type == SDL_KEYUP) {
@@ -661,9 +753,11 @@ int main(int argc, char* argv[]) {
         }
         //아바타 상점 로직
         if (isDestroyed == true && gameStart == false && DeathMenu == false && Avatar == true) {
-            fp = fopen("data.txt", "r+");
+            fp = fopen("data.txt", "r");
+            fscanf(fp, "%d", &Dummy);
             fscanf(fp, "%*[^\n]\n");
             fscanf(fp, "%d", &CoinNum);
+            fclose(fp);
             SDL_Texture* CoinTexture = SDL_CreateTextureFromSurface(Renderer, CoinFont_Surface);
             SDL_RenderClear(Renderer);
             SDL_RenderCopy(Renderer, background, NULL, NULL);
@@ -694,6 +788,8 @@ int main(int argc, char* argv[]) {
                 stretchTexture(Renderer, 510, 300, 80, 80, fish);
                 break;
             }
+            fp = fopen("data.txt", "w+");
+            fprintf(fp, "%d\n%d", Dummy, CoinNum);
             fclose(fp);
             SDL_RenderPresent(Renderer);
             AvatarStart = true;
@@ -799,8 +895,14 @@ int main(int argc, char* argv[]) {
             Distance = calculateDistance(SpritePos, ThornPos);
             CoinDistance = calculateDistance(SpritePos, CoinPos);
             if (Distance < 70) {
-                printf("죽었습니다! ");
-                gameover = true;
+                if (AvatarState == 3 && ThornOrderRandom == 2) {
+                    printf("면역!\n");
+                }
+                else {
+                    printf("죽었습니다! ");
+                    gameover = true;
+                }
+
             }
             if (CoinDistance < 70) {
                 Mix_Volume(-1, SoundSetting);
@@ -1052,3 +1154,5 @@ int main(int argc, char* argv[]) {
     close();
     return 0;
 }
+
+

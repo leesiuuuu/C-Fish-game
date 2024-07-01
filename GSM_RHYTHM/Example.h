@@ -56,5 +56,3 @@ double calculateDistance(SDL_Rect noteRect, SDL_Rect noteCheck) {
 }
 
 
-
-
