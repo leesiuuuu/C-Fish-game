@@ -554,6 +554,11 @@ int main(int argc, char* argv[]) {
                         break;
                     }
                     if (Avatar == true) {
+                        FILE* cf = fopen("data.txt", "r");
+                        fscanf(cf, "%d", &Dummy);
+                        fscanf(cf, "%*[^\n]\n");
+                        fscanf(cf, "%d", &CoinNum);
+                        fclose(cf);
                         switch (AvatarSelete)
                         {
                         case 0:
@@ -562,7 +567,12 @@ int main(int argc, char* argv[]) {
                                     buy[0] = true;
                                     printf("±¸¸ÅµÊ!\n");
                                     Slot1 = IMG_LoadTexture(Renderer, "Image/Game/GoldFishBought.png");
+                                    cf = fopen("data.txt", "r+");
+                                    fscanf(cf, "%d", &Dummy);
+                                    fscanf(cf, "%*[^\n]\n");
                                     CoinNum -= 10;
+                                    fscanf(cf, "%d", &CoinNum);
+                                    fclose(cf);
                                     printf("%d\n", CoinNum);
                                 }
                                 else
@@ -660,11 +670,6 @@ int main(int argc, char* argv[]) {
                             }
                             break;
                         }
-                        FILE* cf = fopen("data.txt", "r");
-                        fscanf(cf, "%d", &Dummy);
-                        fscanf(cf, "%*[^\n]\n");
-                        fscanf(cf, "%d", &CoinNum);
-                        fclose(cf);
                     }
                     break;
                 case SDLK_ESCAPE:
